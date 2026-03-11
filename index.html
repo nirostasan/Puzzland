@@ -948,7 +948,7 @@ function getLevelTheme(level) {
 }
 
 // ─── PHOTO GENERATION ────────────────────────────────────────────────────────
-function generateLevelImage(level, gridSize) {
+async function generateLevelImage(level, gridSize) {
   const TILE_PX = 120;
   const totalSize = gridSize * TILE_PX;
   const canvas = document.createElement('canvas');
@@ -996,28 +996,53 @@ function generateLevelImage(level, gridSize) {
   const minSize = Math.round(totalSize * (0.28 - difficulty * 0.14)); // shrinks with difficulty
   const maxSize = Math.round(totalSize * (0.50 - difficulty * 0.20));
 
+  // Render emoji via SVG foreignObject → Image — the only reliable method on iOS Safari
+  // Returns a Promise that resolves to an HTMLImageElement
+  function makeEmojiImage(emoji, size) {
+    return new Promise((resolve) => {
+      const dim = Math.ceil(size * 1.5);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${dim}" height="${dim}">
+        <foreignObject width="${dim}" height="${dim}">
+          <div xmlns="http://www.w3.org/1999/xhtml"
+               style="font-size:${size}px;width:${dim}px;height:${dim}px;display:flex;align-items:center;justify-content:center;line-height:1">${emoji}</div>
+        </foreignObject>
+      </svg>`;
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    });
+  }
+
+  // Build all emoji images in parallel then draw them
+  const emojiJobs = [];
   for (let i = 0; i < emojiCount; i++) {
-    const emoji = pick(theme.emoji);
-    const size = randInt(minSize, maxSize);
-    const x = rand() * (totalSize + size * 0.4) - size * 0.2;
-    const y = rand() * (totalSize + size * 0.4) - size * 0.2;
-    const angle = (rand() - 0.5) * Math.PI * 2; // full rotation
-    const alpha = 0.55 + rand() * 0.45;
+    emojiJobs.push({
+      emoji: pick(theme.emoji),
+      size:  randInt(minSize, maxSize),
+      x:     rand() * (totalSize + maxSize * 0.4) - maxSize * 0.2,
+      y:     rand() * (totalSize + maxSize * 0.4) - maxSize * 0.2,
+      angle: (rand() - 0.5) * Math.PI * 2,
+      alpha: 0.55 + rand() * 0.45,
+      tint:  pick(theme.colors),
+      blur:  12 + rand() * 18,
+    });
+  }
 
+  const emojiImages = await Promise.all(emojiJobs.map(j => makeEmojiImage(j.emoji, j.size)));
+
+  for (let i = 0; i < emojiJobs.length; i++) {
+    const j   = emojiJobs[i];
+    const img = emojiImages[i];
+    if (!img) continue;
+    const dim = Math.ceil(j.size * 1.5);
     ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(x, y);
-    ctx.rotate(angle);
-    ctx.font = `${size}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    // Colored tint shadow for depth
-    const tintColor = pick(theme.colors);
-    ctx.shadowColor = tintColor;
-    ctx.shadowBlur = 12 + rand() * 18;
-
-    ctx.fillText(emoji, 0, 0);
+    ctx.globalAlpha = j.alpha;
+    ctx.translate(j.x, j.y);
+    ctx.rotate(j.angle);
+    ctx.shadowColor = j.tint;
+    ctx.shadowBlur  = j.blur;
+    ctx.drawImage(img, -dim / 2, -dim / 2, dim, dim);
     ctx.restore();
   }
 
@@ -1255,7 +1280,7 @@ async function initLevel() {
   updateLivesDisplay();
 
   // Generate image
-  state.fullImage = generateLevelImage(level, gridSize);
+  state.fullImage = await generateLevelImage(level, gridSize);
 
   // Pre-extract all tile images
   state.tileImages = {};
