@@ -35,9 +35,18 @@
     font-family: 'Syne', sans-serif;
     height: 100dvh;
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
     overflow: hidden;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 420px;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0 14px;
   }
 
   /* Noise texture overlay */
@@ -53,22 +62,39 @@
 
   header {
     width: 100%;
-    max-width: 700px;
-    padding: 12px 24px 8px;
+    padding: 10px 0 8px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     flex-shrink: 0;
+    gap: 12px;
   }
 
   .logo {
-    font-size: 1.6rem;
+    font-size: 0.95rem;
     font-weight: 800;
+    letter-spacing: -0.04em;
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+    flex-shrink: 0;
+    transform: scaleX(0.82);
+    transform-origin: left center;
+  }
     letter-spacing: -0.02em;
     display: flex;
     align-items: center;
     gap: 0;
+    flex-shrink: 0;
   }
+
+  .logo .puzzle-icon {
+    font-size: 0.8rem;
+    margin-right: 3px;
+    animation: iconWiggle 2.5s ease-in-out infinite;
+    display: inline-block;
+  }
+
+  .logo-text { display: none; }
 
   .logo .p1 { color: #ff6b6b; transform: rotate(-8deg) translateY(2px); display: inline-block; }
   .logo .p2 { color: #ffd166; transform: rotate(5deg) translateY(-2px); display: inline-block; }
@@ -79,13 +105,6 @@
   .logo .p7 { color: #c77dff; transform: rotate(-6deg) translateY(1px); display: inline-block; }
   .logo .p8 { color: #ff6b6b; transform: rotate(5deg) translateY(-2px); display: inline-block; }
 
-  .logo .puzzle-icon {
-    font-size: 1.2rem;
-    margin-right: 4px;
-    animation: iconWiggle 2.5s ease-in-out infinite;
-    display: inline-block;
-  }
-
   @keyframes iconWiggle {
     0%, 100% { transform: rotate(0deg); }
     25%       { transform: rotate(-12deg); }
@@ -95,15 +114,17 @@
   .hud {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
     font-family: 'DM Mono', monospace;
     font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-left: auto;
   }
 
   .level-badge {
     background: var(--panel);
     border: 1px solid var(--border);
-    padding: 4px 14px;
+    padding: 3px 10px;
     border-radius: 99px;
     color: var(--accent);
     display: flex;
@@ -113,26 +134,33 @@
     gap: 1px;
   }
   .level-label {
-    font-size: 0.55rem;
+    font-size: 0.48rem;
     font-weight: 700;
     letter-spacing: 0.12em;
     opacity: 0.7;
     text-transform: uppercase;
   }
   .level-num {
-    font-size: 1.35rem;
+    font-size: 1.1rem;
     font-weight: 800;
     letter-spacing: -0.02em;
   }
 
+  .lives-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+  }
+
   .lives {
     display: flex;
-    gap: 5px;
+    gap: 4px;
   }
 
   .heart {
-    width: 20px;
-    height: 20px;
+    width: 26px;
+    height: 26px;
     transition: all 0.3s;
   }
 
@@ -140,11 +168,25 @@
   .heart.lost svg path { fill: #333; }
   .heart.lost { transform: scale(0.8); }
 
+  .mute-btn {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    color: var(--text);
+    opacity: 0.6;
+    transition: opacity 0.2s, transform 0.15s;
+    line-height: 0;
+    flex-shrink: 0;
+    border-radius: 8px;
+  }
+  .mute-btn:hover { opacity: 1; transform: scale(1.15); }
+  .mute-btn.muted { color: #9ca3af; }
+
   /* Main game area */
   .game-area {
     width: 100%;
-    max-width: 700px;
-    padding: 0 16px 12px;
+    padding: 0 0 12px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -553,45 +595,24 @@
 
   .heart.shake { animation: lifeShake 0.4s ease; }
 
-  /* ── Lives + mute wrapper ── */
-  .lives-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-
-  /* ── Mute button ── */
-  .mute-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    font-size: 0.7rem;
-    opacity: 0.45;
-    transition: opacity 0.2s, transform 0.15s;
-    line-height: 1;
-  }
-  .mute-btn:hover { opacity: 0.9; transform: scale(1.15); }
-
   /* ── Timer ── */
   .timer-wrap {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
   }
 
   .timer-ring {
     position: relative;
-    width: 54px;
-    height: 54px;
+    width: 44px;
+    height: 44px;
     flex-shrink: 0;
   }
 
   .timer-ring svg {
     position: absolute;
     inset: 0;
+    width: 44px;
+    height: 44px;
     transform: rotate(-90deg);
   }
 
@@ -621,7 +642,7 @@
     align-items: center;
     justify-content: center;
     font-family: 'DM Mono', monospace;
-    font-size: 0.95rem;
+    font-size: 0.78rem;
     font-weight: 500;
     color: var(--text);
     transition: color 0.4s;
@@ -630,7 +651,25 @@
   .timer-number.warn   { color: #fbbf24; }
   .timer-number.danger { color: var(--accent2); }
 
-  @keyframes timerPulse {
+  @keyframes timeBonusPop {
+    0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    30%  { transform: translateX(-50%) translateY(-14px) scale(1.25); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-36px) scale(0.9); }
+  }
+
+  .time-bonus-pop {
+    position: fixed;
+    z-index: 999;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4ade80;
+    text-shadow: 0 0 8px rgba(74,222,128,0.8);
+    pointer-events: none;
+    transform: translateX(-50%);
+    animation: timeBonusPop 0.9s cubic-bezier(0.22,1,0.36,1) forwards;
+    white-space: nowrap;
+  }
     0%, 100% { transform: scale(1); }
     50%       { transform: scale(1.12); }
   }
@@ -650,16 +689,27 @@
 </head>
 <body>
 
+<div id="app">
 <header>
   <div class="logo">
     <span class="puzzle-icon">🧩</span><span class="p1">P</span><span class="p2">u</span><span class="p3">z</span><span class="p4">z</span><span class="p5">l</span><span class="p6">a</span><span class="p7">n</span><span class="p8">d</span>
   </div>
+  <button class="mute-btn" id="muteBtn" onclick="toggleMute()" aria-label="Toggle music">
+    <svg id="muteSvg" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+      <!-- Clean single eighth note -->
+      <ellipse cx="7.5" cy="18.5" rx="4" ry="2.8" fill="currentColor"/>
+      <rect x="11" y="4" width="2.2" height="14.5" rx="1.1" fill="currentColor"/>
+      <path d="M11 4 Q18 2 20 6 Q18 5 13.2 6.5 L13.2 4.5 Q18 3 20 6" fill="currentColor"/>
+      <!-- Red slash — hidden when music on -->
+      <line id="muteSlash" x1="3" y1="3" x2="21" y2="21" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" display="none"/>
+    </svg>
+  </button>
   <div class="hud">
     <div class="level-badge" id="levelBadge"><span class="level-label">LEVEL</span><span class="level-num" id="levelNum">1</span></div>
 
     <div class="timer-wrap">
       <div class="timer-ring" id="timerRing">
-        <svg viewBox="0 0 54 54" width="54" height="54">
+        <svg viewBox="0 0 54 54" width="44" height="44">
           <circle class="timer-ring-bg" cx="27" cy="27" r="23"/>
           <circle class="timer-ring-fill" id="timerArc" cx="27" cy="27" r="23"/>
         </svg>
@@ -668,7 +718,6 @@
     </div>
     <div class="lives-wrap">
       <div class="lives" id="livesDisplay"></div>
-      <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🔊</button>
     </div>
   </div>
 </header>
@@ -691,6 +740,8 @@
     <div class="hint-text" id="hintText">Find the <strong>correct spot</strong> for this piece</div>
   </div>
 </div>
+
+</div><!-- /#app -->
 
 <!-- Overlays -->
 <div class="overlay active" id="startOverlay">
@@ -1033,6 +1084,48 @@ function startTimer(seconds) {
 function stopTimer() {
   clearInterval(timerInterval);
   timerInterval = null;
+}
+
+function addTime(seconds) {
+  timerSecondsLeft = Math.min(timerSecondsLeft + seconds, timerTotalSeconds);
+  // If we were in panic mode and now have > 5s, exit panic
+  if (inPanicMode && timerSecondsLeft > 5) {
+    inPanicMode = false;
+    const ring = document.getElementById('timerRing');
+    ring.classList.remove('danger-pulse');
+    // Silence panic music
+    if (panicGain && audioCtx) {
+      panicGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+      setTimeout(() => { try { panicGain.disconnect(); } catch(e) {} panicGain = null; }, 300);
+    }
+    // Restore BGM gain (it's been running silently)
+    if (bgmGain && audioCtx) {
+      bgmGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.2);
+    }
+  }
+  renderTimer();
+  showTimeBonusAnimation(seconds);
+}
+
+function showTimeBonusAnimation(seconds) {
+  const ring = document.getElementById('timerRing');
+  const arc  = document.getElementById('timerArc');
+  const rect = ring.getBoundingClientRect();
+
+  // Flash arc green
+  const prevClass = arc.className;
+  arc.style.stroke = '#4ade80';
+  arc.style.filter = 'drop-shadow(0 0 6px #4ade80)';
+  setTimeout(() => { arc.style.stroke = ''; arc.style.filter = ''; }, 600);
+
+  // Floating label
+  const el = document.createElement('div');
+  el.className = 'time-bonus-pop';
+  el.textContent = `+${seconds}s`;
+  el.style.left = (rect.left + rect.width / 2) + 'px';
+  el.style.top  = (rect.top) + 'px';
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
 }
 
 function renderTimer(snap = false) {
@@ -1435,6 +1528,7 @@ async function handleTileClick(clickedIdx) {
       await sleep(100);
       showLevelComplete();
     } else {
+      addTime(5);
       // Start belt slide immediately and wait for it to finish before unlocking
       updateNextTilePreview(true);
       await sleep(420);
@@ -1536,6 +1630,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── MUSIC ────────────────────────────────────────────────────────────────────
 let musicPlaying = false;
+let isMuted = false;
 let loopTimeout  = null;
 let nextLoopTime = 0;
 let audioCtx     = null;
@@ -1989,25 +2084,37 @@ function initMusic(actx) {
 
 function toggleMute() {
   const btn = document.getElementById('muteBtn');
-  if (musicPlaying) {
+  const slash = document.getElementById('muteSlash');
+  isMuted = !isMuted;
+  if (isMuted) {
     stopMusic();
-    btn.textContent = '🔇';
+    if (panicGain) { try { panicGain.disconnect(); } catch(e) {} panicGain = null; }
+    slash.setAttribute('display', 'inline');
+    btn.classList.add('muted');
   } else {
     startMusic();
-    btn.textContent = '🔊';
+    slash.setAttribute('display', 'none');
+    btn.classList.remove('muted');
   }
 }
 
 let panicGain = null;
+let inPanicMode = false;
 
 function enterPanicMode() {
-  stopMusic(); // disconnects bgmGain, silences all BGM
+  if (isMuted) return;
+  inPanicMode = true;
+  // Mute BGM via gain (keeps it scheduled) rather than stopping it
+  if (bgmGain && audioCtx) {
+    bgmGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+  }
   if (audioCtx && audioCtx.state === 'running') {
     playPanicMusic();
   }
 }
 
 function playPanicMusic() {
+  if (isMuted) return;
   if (!audioCtx) return;
   const ctx = audioCtx;
   const now = ctx.currentTime;
@@ -2113,6 +2220,7 @@ function playPanicMusic() {
 
 // ── "I'm saved!" — warm rising resolved cheer ───────────────────────────────
 function playIAmSaved() {
+  if (isMuted) return;
   if (!audioCtx) return;
   const ctx = audioCtx;
   const now = ctx.currentTime;
@@ -2169,6 +2277,7 @@ function playIAmSaved() {
 }
 
 function playVictorySound() {
+  if (isMuted) return;
   if (!audioCtx || audioCtx.state === 'suspended') return;
   const ctx = audioCtx;
   const now = ctx.currentTime;
@@ -2241,6 +2350,7 @@ function playVictorySound() {
 }
 
 function playGameOverSound() {
+  if (isMuted) return;
   if (!audioCtx || audioCtx.state === 'suspended') return;
   const ctx = audioCtx;
   const now = ctx.currentTime;
@@ -2330,6 +2440,7 @@ function playGameOverSound() {
 }
 
 function playWrongSound() {
+  if (isMuted) return;
   if (!audioCtx || audioCtx.state === 'suspended') return;
   const ctx = audioCtx;
   const now = ctx.currentTime;
@@ -2373,6 +2484,7 @@ function playWrongSound() {
 }
 
 function playCorrectSound() {
+  if (isMuted) return;
   if (!audioCtx) return;
   if (audioCtx.state === 'suspended') return;
 
@@ -2418,6 +2530,7 @@ function playCorrectSound() {
 }
 
 function startMusic() {
+  if (isMuted) return;
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
@@ -2439,6 +2552,7 @@ function scheduleNextLoop() {
 }
 
 function stopMusic() {
+  inPanicMode = false;
   musicPlaying = false;
   clearTimeout(loopTimeout);
   loopTimeout = null;
