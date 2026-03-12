@@ -210,6 +210,86 @@
     transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
   }
 
+  /* ── Reward Bar ── */
+  .reward-bar {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .reward-btn {
+    --reward-glow: #fff;
+    position: relative;
+    border-width: 2px;
+    border-style: solid;
+    border-radius: 16px;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 0 var(--reward-glow);
+  }
+  .reward-btn:hover {
+    transform: scale(1.14) translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2), 0 0 14px var(--reward-glow);
+  }
+  .reward-btn:active { transform: scale(0.93); }
+
+  .reward-emoji {
+    font-size: 1.6rem;
+    line-height: 1;
+    display: block;
+  }
+
+  .reward-count {
+    position: absolute;
+    bottom: -6px;
+    right: -6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border: 2px solid currentColor;
+    border-radius: 99px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+
+  .reward-bar-empty {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    opacity: 0.5;
+  }
+
+  @keyframes rewardPop {
+    0%   { transform: scale(0.4) rotate(-20deg); opacity: 0; }
+    65%  { transform: scale(1.18) rotate(4deg); }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .reward-btn.popping { animation: rewardPop 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+  @keyframes rewardUse {
+    0%   { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  .reward-btn.using { animation: rewardUse 0.3s ease forwards; pointer-events: none; }
+
   /* Grid container */
   .grid-outer {
     position: relative;
@@ -573,6 +653,84 @@
     gap: 16px;
   }
 
+  /* ── Rewarded Ad Overlay ── */
+  .ad-box {
+    background: #111118;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 24px;
+    width: min(340px, 90vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .ad-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    align-self: flex-end;
+  }
+  .ad-placeholder {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    border-radius: 12px;
+    border: 2px dashed rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .ad-icon { font-size: 2.5rem; }
+  .ad-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    opacity: 0.6;
+  }
+  .ad-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+  .ad-skip-wrap {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .ad-timer-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .ad-timer-fill {
+    height: 100%;
+    width: 100%;
+    background: var(--accent3);
+    border-radius: 99px;
+    transform-origin: left;
+    animation: adDrain 3s linear forwards;
+  }
+  @keyframes adDrain {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+  }
+  .ad-skip-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+  .ad-skip-text span { color: var(--accent3); font-weight: 700; }
+
   .feature-list {
     text-align: left;
     font-family: 'DM Mono', monospace;
@@ -657,6 +815,130 @@
     100% { opacity: 0; transform: translateX(-50%) translateY(-36px) scale(0.9); }
   }
 
+  /* ── Reward Reveal ── */
+  .reward-reveal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    transition: opacity 0.35s;
+    pointer-events: none;
+  }
+  .reward-reveal-backdrop.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .reward-reveal-you-got {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: -0.01em;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(-18px);
+    animation: youGotDrop 0.5s cubic-bezier(0.34,1.4,0.64,1) 0.1s forwards;
+  }
+  .reward-reveal-you-got span {
+    background: linear-gradient(135deg, #ffd97d, #ff9a3c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  @keyframes youGotDrop {
+    0%   { opacity: 0; transform: translateY(-24px) scale(0.85); }
+    70%  { opacity: 1; transform: translateY(4px) scale(1.04); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .reward-reveal-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .reward-reveal-icon {
+    font-size: 5rem;
+    line-height: 1;
+    filter: drop-shadow(0 0 24px var(--reveal-glow, #fff));
+    animation: rewardRevealBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+  @keyframes rewardRevealBounce {
+    0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+    70%  { transform: scale(1.15) rotate(5deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .reward-reveal-label {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.02em;
+  }
+  .reward-reveal-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+  .reward-reveal-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 8px;
+    animation: revealSubPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes revealSubPulse {
+    0%, 100% { opacity: 0.35; }
+    50%       { opacity: 0.7; }
+  }
+
+  /* Flying reward token */
+  .reward-fly-token {
+    position: fixed;
+    z-index: 800;
+    border-radius: 16px;
+    border-width: 2px;
+    border-style: solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transform-origin: center center;
+  }
+
+  /* ── Reward Toast ── */
+  .reward-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 8px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 600;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  .reward-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   .time-bonus-pop {
     position: fixed;
     z-index: 999;
@@ -726,6 +1008,8 @@
   <div class="progress-bar-wrap">
     <div class="progress-bar" id="progressBar" style="width:0%"></div>
   </div>
+
+  <div class="reward-bar" id="rewardBar"></div>
 
   <div class="grid-outer">
     <div class="grid-label">TAP THE CORRECT POSITION</div>
@@ -873,8 +1157,24 @@
     </div>
     <div class="overlay-title bad">GAME OVER</div>
     <div class="overlay-sub" id="gameOverSub">You ran out of lives.<br>Better luck next time!</div>
-    <button class="btn btn-primary" onclick="restartLevel()">TRY AGAIN</button>
+    <button class="btn btn-primary" onclick="showRewardedAd()">TRY AGAIN</button>
     <button class="btn btn-secondary" onclick="startGame()">RESTART GAME</button>
+  </div>
+</div>
+
+<!-- Rewarded Ad Overlay -->
+<div class="overlay" id="adOverlay">
+  <div class="ad-box">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <div class="ad-icon">📢</div>
+      <div class="ad-title">Your Ad Here</div>
+      <div class="ad-sub">Rewarded Ad Placeholder</div>
+    </div>
+    <div class="ad-skip-wrap">
+      <div class="ad-timer-bar"><div class="ad-timer-fill" id="adTimerFill"></div></div>
+      <div class="ad-skip-text">Resuming in <span id="adCountdown">3</span>s</div>
+    </div>
   </div>
 </div>
 
@@ -1210,6 +1510,150 @@ let state = {
   isAnimating: false,
 };
 
+// ─── REWARDS ──────────────────────────────────────────────────────────────────
+const REWARDS = {
+  hint:      { emoji: '💡', label: 'Hint',        desc: 'Eliminate a wrong position', bg: '#fff9c4', glow: '#facc15', border: '#fde047' },
+  freeze:    { emoji: '⌛', label: 'Time Freeze', desc: '+10 seconds',                bg: '#cffafe', glow: '#22d3ee', border: '#67e8f9' },
+  shuffle:   { emoji: '🎲', label: 'Shuffle',     desc: 'Change current tile',        bg: '#ede9fe', glow: '#a78bfa', border: '#c4b5fd' },
+  fullheart: { emoji: '❤️', label: 'Full Heart',  desc: 'Restore all 3 lives',        bg: '#ffe4e6', glow: '#fb7185', border: '#fda4af' },
+};
+const REWARD_KEYS = Object.keys(REWARDS);
+
+let playerRewards = {}; // e.g. { hint: 2, freeze: 1 }
+let tryAgainCount  = 0;  // how many times player tried again this level
+let nextRewardAt   = 2;  // tries needed until next reward (gap, not cumulative)
+let triesUntilNext = 2;  // countdown of tries remaining until next reward
+
+function pickRandomReward() {
+  return REWARD_KEYS[Math.floor(Math.random() * REWARD_KEYS.length)];
+}
+
+function grantRandomReward() {
+  const key = pickRandomReward();
+  playerRewards[key] = (playerRewards[key] || 0) + 1;
+  renderRewardBar(key);
+  return key;
+}
+
+function grantRewardSilently(key) {
+  // Add to inventory and re-render bar WITHOUT pop animation
+  playerRewards[key] = (playerRewards[key] || 0) + 1;
+  renderRewardBar(key); // key passed so new one gets pop
+}
+
+function renderRewardBar(newKey = null) {
+  _renderRewardBarWith(playerRewards, newKey);
+}
+
+function renderRewardBarFromSnapshot(snapshot) {
+  _renderRewardBarWith(snapshot, null);
+}
+
+function _renderRewardBarWith(counts, newKey) {
+  const bar = document.getElementById('rewardBar');
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  const hasAny = REWARD_KEYS.some(k => counts[k] > 0);
+  if (!hasAny) return;
+
+  REWARD_KEYS.forEach(key => {
+    const count = counts[key] || 0;
+    if (count === 0) return;
+    const r = REWARDS[key];
+    const btn = document.createElement('button');
+    btn.className = 'reward-btn' + (key === newKey ? ' popping' : '');
+    btn.title = `${r.label}: ${r.desc}`;
+    btn.style.background = r.bg;
+    btn.style.borderColor = r.border;
+    btn.style.setProperty('--reward-glow', r.glow);
+    btn.innerHTML = `<span class="reward-emoji">${r.emoji}</span>`;
+    if (count > 1) {
+      const badge = document.createElement('span');
+      badge.className = 'reward-count';
+      badge.style.color = r.glow;
+      badge.textContent = count;
+      btn.appendChild(badge);
+    }
+    btn.onclick = () => activateReward(key, btn);
+    bar.appendChild(btn);
+  });
+}
+
+function activateReward(key, btn) {
+  if (!playerRewards[key] || playerRewards[key] <= 0) return;
+  if (state.isAnimating) return;
+
+  // Animate out
+  btn.classList.add('using');
+  setTimeout(() => {
+    playerRewards[key]--;
+    applyReward(key);
+    renderRewardBar();
+  }, 280);
+}
+
+function applyReward(key) {
+  switch (key) {
+    case 'hint':      applyHint();      break;
+    case 'freeze':    applyFreeze();    break;
+    case 'shuffle':   applyShuffle();   break;
+    case 'fullheart': applyFullHeart(); break;
+  }
+}
+
+function applyHint() {
+  const available = [...getAvailableTiles()];
+  const expected  = state.revealQueue[state.currentTileIndex];
+  const wrong     = available.filter(i => i !== expected);
+  if (wrong.length === 0) return;
+  const pick = wrong[Math.floor(Math.random() * wrong.length)];
+  const el = getTileEl(pick);
+  if (!el) return;
+  el.classList.remove('available');
+  el.classList.add('unavailable');
+  el.style.opacity = '0.25';
+  el.style.pointerEvents = 'none';
+  el.dataset.hinted = 'true';
+  showToast('💡 Hint used! One wrong spot eliminated.');
+}
+
+function applyFreeze() {
+  addTime(10);
+  showToast('⌛ Time Freeze! +10 seconds added.');
+}
+
+function applyShuffle() {
+  // Swap current tile with a later one in the queue
+  const cur = state.currentTileIndex;
+  const remaining = state.totalTiles - cur - 1;
+  if (remaining <= 0) { showToast('Nothing to shuffle!'); return; }
+  const swapOffset = 1 + Math.floor(Math.random() * remaining);
+  const swapIdx    = cur + swapOffset;
+  [state.revealQueue[cur], state.revealQueue[swapIdx]] =
+    [state.revealQueue[swapIdx], state.revealQueue[cur]];
+  updateNextTilePreview(false);
+  showToast('🎲 Shuffled! Current tile changed.');
+}
+
+function applyFullHeart() {
+  state.lives = 3;
+  updateLivesDisplay();
+  showToast('❤️ Full Heart! All lives restored.');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'reward-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('visible'));
+  setTimeout(() => {
+    t.classList.remove('visible');
+    setTimeout(() => t.remove(), 400);
+  }, 2200);
+}
+
 function getGridSize(level) {
   // 2x2, 2x2, 3x3, 3x3, 4x4, 4x4, 5x5 ...
   return Math.min(2 + Math.floor((level - 1) / 2), 7);
@@ -1373,6 +1817,12 @@ function updateAvailableStates() {
   const available = getAvailableTiles();
   document.querySelectorAll('.tile').forEach(t => {
     const idx = parseInt(t.dataset.idx);
+    // Clear any hint styling so tiles become fully interactive again
+    if (t.dataset.hinted) {
+      t.style.opacity = '';
+      t.style.pointerEvents = '';
+      delete t.dataset.hinted;
+    }
     t.classList.remove('available', 'unavailable');
     if (!state.revealedTiles.has(idx)) {
       if (available.has(idx)) {
@@ -1630,24 +2080,193 @@ async function startGame() {
   stopTimer();
   state.level = 1;
   state.score = 0;
+  playerRewards = {}; // fresh start
+  tryAgainCount  = 0;
+  nextRewardAt   = 2;
+  triesUntilNext = 2;
   hideOverlays();
   await initLevel();   // sets currentThemeName first
+  renderRewardBar();
   startMusic();
 }
 
 async function nextLevel() {
   state.level++;
+  tryAgainCount  = 0;
+  nextRewardAt   = 2;
+  triesUntilNext = 2;
   hideOverlays();
   stopMusic();
-  await initLevel();   // sets currentThemeName
+  await initLevel();
+  renderRewardBar();
   startMusic();
 }
 
 async function restartLevel() {
   hideOverlays();
   stopMusic();
-  await initLevel();   // sets currentThemeName
+  await initLevel();
+  renderRewardBar();
   startMusic();
+}
+
+async function showRewardedAd() {
+  // Hide game over, show ad overlay
+  document.getElementById('gameOverOverlay').classList.remove('active');
+  const adOverlay = document.getElementById('adOverlay');
+  adOverlay.classList.add('active');
+
+  // Reset drain bar animation
+  const fill = document.getElementById('adTimerFill');
+  fill.style.animation = 'none';
+  fill.getBoundingClientRect();
+  fill.style.animation = '';
+
+  // Countdown
+  const countdown = document.getElementById('adCountdown');
+  countdown.textContent = '3';
+  let t = 3;
+  const tick = setInterval(() => {
+    t--;
+    countdown.textContent = Math.max(t, 0);
+    if (t <= 0) clearInterval(tick);
+  }, 1000);
+
+  await sleep(3000);
+  clearInterval(tick);
+  adOverlay.classList.remove('active');
+
+  // Track try-agains; reward when the gap countdown hits zero
+  tryAgainCount++;
+  triesUntilNext--;
+  const earnedReward = triesUntilNext <= 0;
+  if (earnedReward) {
+    nextRewardAt++;          // next gap is one longer
+    triesUntilNext = nextRewardAt; // reset countdown to new gap
+  }
+
+  // Snapshot current rewards BEFORE restart (so bar shows old state during animation)
+  const rewardsSnapshot = { ...playerRewards };
+
+  // Pick the reward key now (before restart) if one was earned
+  const rewarded = earnedReward ? pickRandomReward() : null;
+
+  // Restart level first so the fresh grid is visible behind the reveal
+  await restartLevel();
+
+  // Pause timer while reward reveal plays (only if showing reveal)
+  if (earnedReward) {
+    stopTimer();
+    await showRewardReveal(rewarded, rewardsSnapshot);
+    startTimer(timerSecondsLeft);
+  }
+}
+
+async function showRewardReveal(key, snapshot) {
+  const r = REWARDS[key];
+  // snapshot = rewards state BEFORE this new reward; may be undefined for non-ad grants
+  const oldCounts = snapshot ? { ...snapshot } : { ...playerRewards };
+
+  // ── 1. Show backdrop with big icon ──
+  const backdrop = document.createElement('div');
+  backdrop.className = 'reward-reveal-backdrop';
+  backdrop.innerHTML = `
+    <div class="reward-reveal-you-got">You <span>got</span> a reward! 🎁</div>
+    <div class="reward-reveal-card">
+      <div class="reward-reveal-icon" style="--reveal-glow:${r.glow}">${r.emoji}</div>
+      <div class="reward-reveal-label">${r.label}</div>
+      <div class="reward-reveal-desc">${r.desc}</div>
+    </div>
+    <div class="reward-reveal-sub">Collecting in 3s…</div>
+  `;
+  document.body.appendChild(backdrop);
+  requestAnimationFrame(() => backdrop.classList.add('visible'));
+  playRewardSound();
+
+  // ── 2. Render bar immediately with OLD state and keep it that way ──
+  _renderRewardBarWith(oldCounts, null);
+
+  // ── 3. Countdown ──
+  const sub = backdrop.querySelector('.reward-reveal-sub');
+  await sleep(1000); sub.textContent = 'Collecting in 2s…';
+  await sleep(1000); sub.textContent = 'Collecting in 1s…';
+  await sleep(1000);
+
+  // ── 4. Find or create a phantom fly target in the bar ──
+  const bar = document.getElementById('rewardBar');
+  let targetBtn = bar ? [...bar.querySelectorAll('.reward-btn')].find(b => b.title.startsWith(r.label)) : null;
+
+  if (!targetBtn) {
+    // Reward not in bar yet — append an invisible phantom as fly destination
+    const phantom = document.createElement('button');
+    phantom.className = 'reward-btn';
+    phantom.title = `${r.label}: ${r.desc}`;
+    phantom.style.cssText = `background:${r.bg}; border-color:${r.border}; opacity:0; transform:scale(0.5); pointer-events:none;`;
+    phantom.style.setProperty('--reward-glow', r.glow);
+    phantom.innerHTML = `<span class="reward-emoji">${r.emoji}</span>`;
+    if (bar) bar.appendChild(phantom);
+    targetBtn = phantom;
+  }
+  // Note: if reward already exists, keep it fully visible during the fly so the
+  // player sees their current count — it will update to new count on landing.
+
+  const startX = window.innerWidth / 2;
+  const startY = window.innerHeight / 2;
+  const tokenSize = 52;
+
+  // ── 5. Measure target position ──
+  const rect = targetBtn.getBoundingClientRect();
+  const endX = rect.left + rect.width / 2;
+  const endY = rect.top  + rect.height / 2;
+
+  // ── 6. Fade out backdrop ──
+  backdrop.style.opacity = '0';
+  await sleep(300);
+  backdrop.remove();
+
+  // ── 7. Create flying token ──
+  const token = document.createElement('div');
+  token.className = 'reward-fly-token';
+  token.style.cssText = `
+    width:${tokenSize}px; height:${tokenSize}px;
+    background:${r.bg}; border-color:${r.border};
+    font-size:1.6rem;
+    left:${startX - tokenSize/2}px;
+    top:${startY - tokenSize/2}px;
+  `;
+  token.textContent = r.emoji;
+  document.body.appendChild(token);
+
+  // ── 8. Animate curved arc ──
+  const cpX = startX + (endX - startX) * 0.1 + (endY > startY ? -120 : 120);
+  const cpY = startY + (endY - startY) * 0.3 - 80;
+  const duration = 700;
+  const startT = performance.now();
+
+  await new Promise(resolve => {
+    function frame(now) {
+      const t = Math.min((now - startT) / duration, 1);
+      const e = t * t * t;
+      const bx = (1-e)*(1-e)*startX + 2*(1-e)*e*cpX + e*e*endX;
+      const by = (1-e)*(1-e)*startY + 2*(1-e)*e*cpY + e*e*endY;
+      const scale = 1 - e * 0.3;
+      const opacity = t > 0.85 ? 1 - (t - 0.85) / 0.15 : 1;
+      token.style.left      = (bx - tokenSize/2) + 'px';
+      token.style.top       = (by - tokenSize/2) + 'px';
+      token.style.transform = `scale(${scale})`;
+      token.style.opacity   = opacity;
+      if (t < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        token.remove();
+        // ── 9. NOW grant reward and re-render bar with pop ──
+        playerRewards[key] = (playerRewards[key] || 0) + 1;
+        renderRewardBar(key);
+        resolve();
+      }
+    }
+    requestAnimationFrame(frame);
+  });
 }
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
@@ -2506,6 +3125,76 @@ function playWrongSound() {
   tg.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
   thud.connect(tg); tg.connect(out);
   thud.start(now); thud.stop(now + 0.25);
+}
+
+function playRewardSound() {
+  if (isMuted) return;
+  if (!audioCtx) return;
+  if (audioCtx.state === 'suspended') return;
+
+  const ctx = audioCtx;
+  const now = ctx.currentTime;
+
+  // Magic wand twinkle: C5 → E5 → G5 → C6, bell sine with sparkle harmonics
+  const notes = [
+    { freq: noteToFreq('C5'),  t: 0.00, dur: 0.5,  vol: 0.45 },
+    { freq: noteToFreq('E5'),  t: 0.10, dur: 0.5,  vol: 0.42 },
+    { freq: noteToFreq('G5'),  t: 0.20, dur: 0.5,  vol: 0.42 },
+    { freq: noteToFreq('C6'),  t: 0.32, dur: 0.9,  vol: 0.50 },
+  ];
+
+  for (const { freq, t, dur, vol } of notes) {
+    const s = now + t;
+
+    // Warm bell body (sine)
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, s);
+    g.gain.linearRampToValueAtTime(vol, s + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, s + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(s); o.stop(s + dur + 0.05);
+
+    // Bright octave shimmer (triangle, softer)
+    const o2 = ctx.createOscillator();
+    const g2 = ctx.createGain();
+    o2.type = 'triangle';
+    o2.frequency.value = freq * 2;
+    g2.gain.setValueAtTime(0, s);
+    g2.gain.linearRampToValueAtTime(vol * 0.18, s + 0.01);
+    g2.gain.exponentialRampToValueAtTime(0.001, s + dur * 0.5);
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.start(s); o2.stop(s + dur * 0.5 + 0.05);
+
+    // High fairy sparkle (sine 3x, very soft, short)
+    const o3 = ctx.createOscillator();
+    const g3 = ctx.createGain();
+    o3.type = 'sine';
+    o3.frequency.value = freq * 3;
+    g3.gain.setValueAtTime(0, s);
+    g3.gain.linearRampToValueAtTime(vol * 0.08, s + 0.008);
+    g3.gain.exponentialRampToValueAtTime(0.001, s + 0.12);
+    o3.connect(g3); g3.connect(ctx.destination);
+    o3.start(s); o3.stop(s + 0.15);
+  }
+
+  // Trailing sparkle cascade — random high pings after the arpeggio
+  const sparkFreqs = [noteToFreq('E7'), noteToFreq('G7'), noteToFreq('A7'), noteToFreq('C8')];
+  for (let i = 0; i < 6; i++) {
+    const s = now + 0.5 + i * 0.07 + Math.random() * 0.06;
+    const freq = sparkFreqs[Math.floor(Math.random() * sparkFreqs.length)];
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0, s);
+    g.gain.linearRampToValueAtTime(0.06, s + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, s + 0.18);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(s); o.stop(s + 0.2);
+  }
 }
 
 function playCorrectSound() {
