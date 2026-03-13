@@ -141,9 +141,10 @@
 
   .queue-viewport {
     width: 100%;
-    /* overflow visible so glow/shadow/float animation are never clipped */
     overflow: visible;
     padding: 8px 8px 12px 8px;
+    /* Reserve space from first paint so grid never shifts down */
+    min-height: 130px;
   }
 
   .queue-belt {
@@ -152,9 +153,10 @@
     justify-content: flex-end;
     align-items: flex-end;
     gap: 8px;
-    /* extra padding so the float animation and box-shadow are fully visible */
     padding: 8px 8px 12px 8px;
     overflow: visible;
+    /* Match viewport min-height so belt holds space before JS populates it */
+    min-height: 110px;
   }
 
   /* Noise texture overlay */
@@ -2082,16 +2084,20 @@ async function initLevel() {
   const { cols, rows } = getGridDimensions(level);
   state.cols = cols;
   state.rows = rows;
-  state.gridSize = cols; // legacy alias used in a few places
+  state.gridSize = cols;
   state.totalTiles = cols * rows;
   state.revealedTiles = new Set();
   state.lives = 3;
   state.isAnimating = false;
 
+  // Hide game area immediately so the layout shift is invisible
+  const gameArea = document.querySelector('.game-area');
+  if (gameArea) { gameArea.style.opacity = '0'; gameArea.style.transition = 'none'; }
+
   // Update UI labels
   document.getElementById('levelNum').textContent = level;
   const theme = getLevelTheme(level);
-  currentThemeName = theme.name; // drive music style
+  currentThemeName = theme.name;
   updateLivesDisplay();
 
   // Generate image — pattern complexity drives visual difficulty
@@ -2118,17 +2124,23 @@ async function initLevel() {
   state.revealQueue = generateRevealQueue(cols, rows);
   state.currentTileIndex = 0;
 
-  // Build grid DOM
+  // Build all UI synchronously so layout is fully computed before revealing
   buildGrid(cols, rows);
-
-  // Reveal first tile automatically
-  await revealFirstTile();
-
-  // Show next tile to place
-  updateNextTilePreview();
   updateProgress();
+  renderRewardBar();
 
-  // Start level countdown (wave-aware time)
+  // Wait one frame so the browser computes final layout with all elements in place
+  await new Promise(r => requestAnimationFrame(r));
+
+  // Now fade in smoothly — no visible shift
+  if (gameArea) {
+    gameArea.style.transition = 'opacity 0.25s ease';
+    gameArea.style.opacity = '1';
+  }
+
+  // Reveal first tile, then build queue (currentTileIndex=1 by then so belt shows correct tile)
+  await revealFirstTile();
+  updateNextTilePreview();
   startTimer(getLevelTime(cols, rows, level));
 }
 
