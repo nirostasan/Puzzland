@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Puzzland</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap');
@@ -25,28 +28,133 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   html, body {
+    width: 100%;
     height: 100%;
     overflow: hidden;
+    touch-action: none;
   }
 
   body {
     background: var(--bg);
     color: var(--text);
     font-family: 'Syne', sans-serif;
+    width: 100%;
     height: 100dvh;
     display: flex;
     justify-content: center;
+    align-items: stretch;
     overflow: hidden;
   }
 
   #app {
     width: 100%;
-    max-width: 420px;
+    max-width: 430px;
     height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    padding: 0 14px;
+    /* horizontal padding + safe area insets */
+    padding: env(safe-area-inset-top, 0px) 12px env(safe-area-inset-bottom, 8px);
+  }
+
+  /* ── Header: shrinks to content, never grows ── */
+  header {
+    width: 100%;
+    padding: 8px 0 6px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  /* ── Game area: fills all remaining vertical space ── */
+  .game-area {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 0;
+    overflow: visible;
+  }
+
+  /* ── Progress bar: fixed thin strip ── */
+  .progress-bar-wrap {
+    width: 100%;
+    height: 4px;
+    background: var(--panel);
+    border-radius: 99px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent3), var(--accent));
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  /* ── Reward bar: always reserves its height ── */
+  .reward-bar {
+    width: 100%;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* ── Grid outer: flex-grows to fill remaining space ── */
+  .grid-outer {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  #grid {
+    display: grid;
+    gap: 3px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.6), inset 0 0 0 1px var(--border);
+    flex-shrink: 0;
+  }
+
+  /* ── Queue belt: fixed height, never grows ── */
+  .next-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .queue-viewport {
+    width: 100%;
+    /* overflow visible so glow/shadow/float animation are never clipped */
+    overflow: visible;
+    padding: 8px 8px 12px 8px;
+  }
+
+  .queue-belt {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 8px;
+    /* extra padding so the float animation and box-shadow are fully visible */
+    padding: 8px 8px 12px 8px;
+    overflow: visible;
   }
 
   /* Noise texture overlay */
@@ -58,15 +166,6 @@
     pointer-events: none;
     z-index: 1000;
     opacity: 0.5;
-  }
-
-  header {
-    width: 100%;
-    padding: 10px 0 8px;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 12px;
   }
 
   .logo {
@@ -183,43 +282,7 @@
   .mute-btn:hover { opacity: 1; transform: scale(1.15); }
   .mute-btn.muted { color: #9ca3af; }
 
-  /* Main game area */
-  .game-area {
-    width: 100%;
-    padding: 0 0 12px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .progress-bar-wrap {
-    width: 100%;
-    height: 3px;
-    background: var(--panel);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent3), var(--accent));
-    border-radius: 99px;
-    transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
-  }
-
-  /* ── Reward Bar ── */
-  .reward-bar {
-    width: 100%;
-    min-height: 52px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
+  /* Grid container */
 
   .reward-btn {
     --reward-glow: #fff;
@@ -237,7 +300,17 @@
     flex-shrink: 0;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 0 var(--reward-glow);
   }
-  .reward-btn:hover {
+  .reward-btn.reward-empty {
+    opacity: 1;
+    cursor: default;
+    pointer-events: none;
+    filter: grayscale(0.4) brightness(0.75);
+  }
+  .reward-btn.reward-empty .reward-emoji {
+    filter: grayscale(1);
+  }
+
+  .reward-btn:not(.reward-empty):hover {
     transform: scale(1.14) translateY(-2px);
     box-shadow: 0 6px 18px rgba(0,0,0,0.2), 0 0 14px var(--reward-glow);
   }
@@ -289,19 +362,6 @@
     100% { transform: scale(1.6); opacity: 0; }
   }
   .reward-btn.using { animation: rewardUse 0.3s ease forwards; pointer-events: none; }
-
-  /* Grid container */
-  .grid-outer {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-  }
 
   .grid-label {
     font-size: 0.72rem;
@@ -420,37 +480,12 @@
 
 
 
-  /* ── Tile queue belt ── */
-  .next-section {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-
   .next-label {
     font-size: 0.72rem;
     color: var(--muted);
     letter-spacing: 0.12em;
     text-transform: uppercase;
     font-family: 'DM Mono', monospace;
-  }
-
-  .queue-viewport {
-    width: 100%;
-    overflow: hidden;
-    padding: 6px 8px 6px 0;
-  }
-
-  .queue-belt {
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
-    align-items: flex-end;
-    gap: 10px;
-    padding: 8px 4px 10px 0;
   }
 
   .q-tile {
@@ -478,6 +513,22 @@
   }
 
   .q-tile.is-next { opacity: 0.6; }
+
+  /* Shuffle cascade ripple */
+  @keyframes shuffleHop {
+    0%   { transform: translateY(0)     scale(1); }
+    35%  { transform: translateY(-12px) scale(1.08); }
+    70%  { transform: translateY(3px)   scale(0.96); }
+    100% { transform: translateY(0)     scale(1); }
+  }
+  @keyframes shuffleLand {
+    0%   { transform: translateY(-22px) scale(0.85); opacity: 0.4; }
+    55%  { transform: translateY(5px)   scale(1.12); opacity: 1; }
+    78%  { transform: translateY(-4px)  scale(0.97); }
+    100% { transform: translateY(0)     scale(1); }
+  }
+  .q-tile.shuffle-hop  { animation: shuffleHop  0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+  .q-tile.shuffle-land { animation: shuffleLand 0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
 
   /* Belt slides in from the left */
   @keyframes beltSlideIn {
@@ -637,8 +688,9 @@
     gap: 2px;
     border-radius: 8px;
     overflow: hidden;
-    width: 160px;
-    height: 160px;
+    /* size set dynamically in JS to match cols×rows aspect ratio */
+    max-width: 220px;
+    max-height: 280px;
   }
 
   .completed-grid img {
@@ -917,9 +969,8 @@
   /* ── Reward Toast ── */
   .reward-toast {
     position: fixed;
-    bottom: 80px;
     left: 50%;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateX(-50%) translateY(-50%) translateY(10px);
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 99px;
@@ -936,7 +987,7 @@
   }
   .reward-toast.visible {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: var(--visible-transform, translateX(-50%) translateY(-50%));
   }
 
   .time-bonus-pop {
@@ -1012,16 +1063,13 @@
   <div class="reward-bar" id="rewardBar"></div>
 
   <div class="grid-outer">
-    <div class="grid-label">TAP THE CORRECT POSITION</div>
     <div id="grid"></div>
   </div>
 
   <div class="next-section">
-    <div class="next-label">PLACE THIS PIECE ↓</div>
     <div class="queue-viewport">
       <div class="queue-belt" id="queueBelt"></div>
     </div>
-    <div class="hint-text" id="hintText">Find the <strong>correct spot</strong> for this piece</div>
   </div>
 </div>
 
@@ -1181,6 +1229,7 @@
 <script>
 // ─── LEVEL THEMES ─────────────────────────────────────────────────────────────
 const LEVEL_THEMES = [
+  // ── Original 10 ──
   {
     name: 'Animals',
     emoji: ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐸'],
@@ -1241,87 +1290,277 @@ const LEVEL_THEMES = [
     bg: ['#0d0221','#1a044a','#2a0a6e'],
     colors: ['#7c3aed','#8b5cf6','#a78bfa','#c4b5fd','#ede9fe'],
   },
+
+  // ── Nature & World ──
+  {
+    name: 'Volcano',
+    emoji: ['🌋','🔥','💥','🪨','⛰️','🌋','🫧','🌡️','💨','☁️','🏔️','🌊'],
+    bg: ['#3b0000','#7f1100','#b22000'],
+    colors: ['#ff4500','#ff6b2b','#ff8c00','#ffb347','#ffd700'],
+  },
+  {
+    name: 'Deep Sea',
+    emoji: ['🦑','🐙','🦭','🐟','🦐','🪼','🐡','🦀','🐚','🌊','🏴‍☠️','💀'],
+    bg: ['#000814','#001233','#012a4a'],
+    colors: ['#023e8a','#0077b6','#00b4d8','#48cae4','#ade8f4'],
+  },
+  {
+    name: 'Garden',
+    emoji: ['🦋','🐛','🐝','🐞','🌻','🌸','🍄','🌿','🦗','🐜','🌼','🌱'],
+    bg: ['#1b4332','#2d6a4f','#40916c'],
+    colors: ['#74c69d','#95d5b2','#b7e4c7','#d8f3dc','#f8ffe5'],
+  },
+  {
+    name: 'Mushroom Forest',
+    emoji: ['🍄','🌲','🦔','🐿️','🦉','🌙','✨','🍃','🐸','🌿','🦋','🪵'],
+    bg: ['#1a0a00','#3d1a00','#5c2d00'],
+    colors: ['#b5451b','#d4622a','#e8833a','#f0a868','#f8d5a3'],
+  },
+  {
+    name: 'Desert',
+    emoji: ['🌵','🦂','🐪','🦎','🌅','🏜️','💨','🌞','🪨','🐍','🦅','⭐'],
+    bg: ['#5c3d11','#8b5e3c','#c49a6c'],
+    colors: ['#e9c46a','#f4a261','#e76f51','#d4845a','#f0cfa0'],
+  },
+  {
+    name: 'Arctic',
+    emoji: ['❄️','🐧','🦭','🐻‍❄️','🌨️','⛄','🏔️','🌊','🪨','🌬️','💨','🌌'],
+    bg: ['#0a1628','#162844','#1e3a5f'],
+    colors: ['#a8dadc','#caf0f8','#e0f7fa','#ffffff','#90e0ef'],
+  },
+  {
+    name: 'Tropical',
+    emoji: ['🌴','🍍','🦜','🌺','🐠','🦀','🌊','☀️','🍹','🐚','🦋','🌸'],
+    bg: ['#003d1f','#006b3c','#009150'],
+    colors: ['#ffcc00','#ff6b35','#ff9f1c','#2ec4b6','#cbf3f0'],
+  },
+
+  // ── Fantasy & Sci-Fi ──
+  {
+    name: 'Robots',
+    emoji: ['🤖','⚙️','🔧','🦾','🦿','💡','🔋','📡','🛠️','💻','🕹️','⚡'],
+    bg: ['#0f0f1a','#1a1a2e','#16213e'],
+    colors: ['#00d4ff','#0099cc','#7b2fff','#00ff88','#ff6b00'],
+  },
+  {
+    name: 'Retro Gaming',
+    emoji: ['👾','🕹️','🎮','👻','🍄','⭐','💣','🏆','❤️','🔫','🪙','🎯'],
+    bg: ['#000000','#0d0d0d','#1a0033'],
+    colors: ['#ff0000','#00ff00','#0000ff','#ffff00','#ff00ff'],
+  },
+  {
+    name: 'Aliens',
+    emoji: ['👽','🛸','🌍','🔭','💫','🌌','☄️','🪐','🤖','👾','🚀','⭐'],
+    bg: ['#000d1a','#001a33','#00264d'],
+    colors: ['#00ff88','#39ff14','#7fff00','#ccff00','#80ff00'],
+  },
+  {
+    name: 'Mythical',
+    emoji: ['🐉','🦄','🧜','🦅','🦁','🐺','🦊','🧚','🔮','⚡','🌊','🔥'],
+    bg: ['#1a0040','#2d006b','#3d0080'],
+    colors: ['#9b5de5','#f15bb5','#fee440','#00bbf9','#00f5d4'],
+  },
+  {
+    name: 'Gems',
+    emoji: ['💎','💍','🔮','✨','⭐','🌟','💫','🪩','🏆','👑','🌈','💠'],
+    bg: ['#0a0015','#12002a','#1e003f'],
+    colors: ['#ff6ec7','#a855f7','#60a5fa','#34d399','#fbbf24'],
+  },
+  {
+    name: 'Medieval',
+    emoji: ['🏰','⚔️','🛡️','🐉','👑','🏹','🪄','⚗️','🗝️','🔱','🎭','🌙'],
+    bg: ['#1a0a00','#2d1400','#40200a'],
+    colors: ['#c9a84c','#e8c96e','#f5d88a','#a0522d','#8b4513'],
+  },
+  {
+    name: 'Horror',
+    emoji: ['👻','🎃','💀','🕷️','🕸️','🦇','🩸','🔪','⚰️','🌑','🌫️','🖤'],
+    bg: ['#0a0000','#150000','#200000'],
+    colors: ['#800000','#b30000','#ff0000','#4a0404','#cc3333'],
+  },
+
+  // ── Human World ──
+  {
+    name: 'Theater',
+    emoji: ['🎭','🎬','🎤','💃','🕺','🎪','🌹','👏','🎶','✨','🪄','🎠'],
+    bg: ['#1a0020','#2d003a','#400054'],
+    colors: ['#e040fb','#ea80fc','#f48fb1','#f8bbd9','#fce4ec'],
+  },
+  {
+    name: 'Circus',
+    emoji: ['🎪','🤹','🎠','🎡','🎢','🎭','🤡','🦁','🐘','🎶','✨','🎯'],
+    bg: ['#3d0000','#5c0a0a','#7a1010'],
+    colors: ['#ff1744','#ffea00','#00e5ff','#76ff03','#ff9100'],
+  },
+  {
+    name: 'Japanese',
+    emoji: ['🍣','🗾','⛩️','🎎','🌸','🍡','🀄','🎏','🏯','🎍','🦊','🌊'],
+    bg: ['#1a0010','#33001f','#4d002f'],
+    colors: ['#ff6b9d','#ff4081','#f06292','#f8bbd9','#fce4ec'],
+  },
+  {
+    name: 'Art',
+    emoji: ['🎨','🖌️','✏️','📐','🖼️','🎭','🌈','✨','💡','🎭','🪄','🌟'],
+    bg: ['#1a1100','#332200','#4d3300'],
+    colors: ['#ff6b35','#f7c59f','#efefd0','#004e89','#1a936f'],
+  },
+  {
+    name: 'Fashion',
+    emoji: ['👗','👠','👜','💄','💍','👒','🕶️','👑','💎','🌸','✨','🦋'],
+    bg: ['#2d001a','#4a0029','#660038'],
+    colors: ['#ff69b4','#ff85c2','#ffb3d1','#ffd6e8','#fff0f6'],
+  },
+  {
+    name: 'City',
+    emoji: ['🏙️','🌆','🌇','🚇','🚕','🌃','🎆','🏢','🌉','🚦','🏪','🌁'],
+    bg: ['#0a0a1a','#111127','#1a1a3e'],
+    colors: ['#ffd700','#ffa500','#ff6347','#00bfff','#7b68ee'],
+  },
+  {
+    name: 'Travel',
+    emoji: ['✈️','🗺️','🗼','🗽','🏰','🌍','🧳','📸','🌅','🏖️','🎡','🌄'],
+    bg: ['#001a33','#002a52','#003d70'],
+    colors: ['#00a8e8','#007ea7','#003459','#f2a365','#e8d5b7'],
+  },
+
+  // ── Fun & Quirky ──
+  {
+    name: 'Desserts',
+    emoji: ['🍦','🧁','🎂','🍰','🍩','🍪','🍫','🍬','🍭','🧇','🥐','🍮'],
+    bg: ['#3d0030','#5c0045','#7a0060'],
+    colors: ['#ff85a1','#ffa8b8','#ffc8d3','#ffe0e8','#fff0f4'],
+  },
+  {
+    name: 'Toys',
+    emoji: ['🧸','🎮','🎲','🪆','🎯','🎠','🤖','🪀','🎪','🧩','🪁','🎨'],
+    bg: ['#001a4d','#002b80','#0033aa'],
+    colors: ['#ff4444','#ffbb00','#44dd44','#4488ff','#ff44ff'],
+  },
+  {
+    name: 'Love',
+    emoji: ['❤️','💕','💖','💗','💝','🌹','💌','💑','💏','🥰','😍','💋'],
+    bg: ['#2d0014','#4a0022','#660030'],
+    colors: ['#ff4d6d','#ff758f','#ff8fa3','#ffb3c1','#ffd6e0'],
+  },
+  {
+    name: 'Holidays',
+    emoji: ['🎃','🎄','🎅','🤶','🎆','🎇','🎑','🏮','🎋','🎍','🎎','🎏'],
+    bg: ['#003300','#004d00','#006600'],
+    colors: ['#ff0000','#ffcc00','#00cc00','#0066ff','#ff6600'],
+  },
+
+  // ── Moods / Abstract ──
+  {
+    name: 'Emotions',
+    emoji: ['😂','😭','😍','🤩','😡','😱','🥳','😴','🤔','😎','🥺','😤'],
+    bg: ['#1a1400','#332800','#4d3c00'],
+    colors: ['#ffd700','#ffcc00','#ffb700','#ffa500','#ff8c00'],
+  },
+  {
+    name: 'Elements',
+    emoji: ['🔥','💧','🌊','⚡','🌪','🌍','🪨','❄️','☁️','🌈','💨','✨'],
+    bg: ['#0d001a','#1a0033','#260040'],
+    colors: ['#ff4500','#1e90ff','#32cd32','#ffd700','#9400d3'],
+  },
+  {
+    name: 'Dreams',
+    emoji: ['💭','🌙','⭐','🦋','🌈','✨','💫','🌸','🔮','🌌','🌊','🪄'],
+    bg: ['#0d0033','#1a0066','#260099'],
+    colors: ['#b388ff','#ea80fc','#80d8ff','#ccff90','#ffd740'],
+  },
+  {
+    name: 'Gothic',
+    emoji: ['🖤','💀','🕷️','🌑','🦇','🥀','⚰️','🔮','🪦','🌫️','🖤','🌙'],
+    bg: ['#050505','#0a0a0a','#0f0010'],
+    colors: ['#4a0080','#6600b3','#8000ff','#9933ff','#b366ff'],
+  },
+  {
+    name: 'Science',
+    emoji: ['🔬','🧬','⚗️','🔭','💡','🧪','🧫','🧲','⚡','🌡️','🔋','💻'],
+    bg: ['#001a33','#002952','#003d70'],
+    colors: ['#00e5ff','#00b8d4','#0091ea','#304ffe','#6200ea'],
+  },
+  {
+    name: 'Medicine',
+    emoji: ['💊','🩺','🏥','🩻','💉','🩹','🧬','❤️','🦷','🧠','👁️','🫀'],
+    bg: ['#001a1a','#003333','#004d4d'],
+    colors: ['#00bcd4','#26c6da','#4dd0e1','#80deea','#b2ebf2'],
+  },
 ];
+
 
 function getLevelTheme(level) {
   return LEVEL_THEMES[(level - 1) % LEVEL_THEMES.length];
 }
 
 // ─── PHOTO GENERATION ────────────────────────────────────────────────────────
-async function generateLevelImage(level, gridSize) {
-  const TILE_PX = 120;
-  const totalSize = gridSize * TILE_PX;
-  const canvas = document.createElement('canvas');
-  canvas.width = totalSize;
-  canvas.height = totalSize;
+async function generateLevelImage(level, cols, rows, patternComplexity) {
+  const TILE_PX   = 120;
+  const canvasW   = cols * TILE_PX;
+  const canvasH   = rows * TILE_PX;
+  const totalSize = Math.max(canvasW, canvasH);
+  const canvas    = document.createElement('canvas');
+  canvas.width  = canvasW;
+  canvas.height = canvasH;
   const ctx = canvas.getContext('2d');
 
   const theme = getLevelTheme(level);
-  const seed = level * 137 + 42;
+  const seed  = level * 137 + 42;
 
   // Seeded random
   let r = seed;
-  const rand = () => { r = (r * 16807 + 0) % 2147483647; return (r - 1) / 2147483646; };
+  const rand    = () => { r = (r * 16807 + 0) % 2147483647; return (r - 1) / 2147483646; };
   const randInt = (min, max) => Math.floor(rand() * (max - min + 1)) + min;
-  const pick = arr => arr[randInt(0, arr.length - 1)];
+  const pick    = arr => arr[randInt(0, arr.length - 1)];
 
   // ── Background ──
-  const bgGrad = ctx.createLinearGradient(0, 0, totalSize, totalSize);
-  bgGrad.addColorStop(0, theme.bg[0]);
+  const bgGrad = ctx.createLinearGradient(0, 0, canvasW, canvasH);
+  bgGrad.addColorStop(0,   theme.bg[0]);
   bgGrad.addColorStop(0.5, theme.bg[1]);
-  bgGrad.addColorStop(1, theme.bg[2]);
+  bgGrad.addColorStop(1,   theme.bg[2]);
   ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, totalSize, totalSize);
+  ctx.fillRect(0, 0, canvasW, canvasH);
 
-  // ── Soft color blobs behind emojis for richness ──
-  for (let i = 0; i < 8 + gridSize * 2; i++) {
-    const x = rand() * totalSize;
-    const y = rand() * totalSize;
+  // ── Soft color blobs ──
+  const numTiles = cols * rows;
+  for (let i = 0; i < 8 + numTiles / 3; i++) {
+    const x = rand() * canvasW, y = rand() * canvasH;
     const radius = 40 + rand() * (totalSize * 0.35);
     const rg = ctx.createRadialGradient(x, y, 0, x, y, radius);
-    const c = pick(theme.colors);
-    rg.addColorStop(0, c + '55');
+    rg.addColorStop(0, pick(theme.colors) + '55');
     rg.addColorStop(1, 'transparent');
     ctx.fillStyle = rg;
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
   }
 
-  // ── Emoji density & size based on difficulty ──
-  // Early levels: fewer, bigger, more spread out emojis → easier to distinguish tiles
-  // Later levels: more, smaller, denser → harder
-  const difficulty = (level - 1) / 9; // 0..1
-  const emojiCount = Math.round(6 + difficulty * 30); // 6 to 36
-  const minSize = Math.round(totalSize * (0.28 - difficulty * 0.14)); // shrinks with difficulty
-  const maxSize = Math.round(totalSize * (0.50 - difficulty * 0.20));
+  // ── Emoji density & size ──
+  const difficulty  = Math.min((level - 1) / 9, 1);
+  const emojiCount  = Math.round(6 + difficulty * 30);
+  const minSize     = Math.round(totalSize * (0.28 - difficulty * 0.14));
+  const maxSize     = Math.round(totalSize * (0.50 - difficulty * 0.20));
 
-  // Render emoji via SVG foreignObject → Image — the only reliable method on iOS Safari
-  // Returns a Promise that resolves to an HTMLImageElement
   function makeEmojiImage(emoji, size) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const dim = Math.ceil(size * 1.5);
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${dim}" height="${dim}">
         <foreignObject width="${dim}" height="${dim}">
           <div xmlns="http://www.w3.org/1999/xhtml"
                style="font-size:${size}px;width:${dim}px;height:${dim}px;display:flex;align-items:center;justify-content:center;line-height:1">${emoji}</div>
-        </foreignObject>
-      </svg>`;
+        </foreignObject></svg>`;
       const img = new Image();
-      img.onload = () => resolve(img);
+      img.onload  = () => resolve(img);
       img.onerror = () => resolve(null);
       img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     });
   }
 
-  // Build all emoji images in parallel then draw them
   const emojiJobs = [];
   for (let i = 0; i < emojiCount; i++) {
     emojiJobs.push({
       emoji: pick(theme.emoji),
       size:  randInt(minSize, maxSize),
-      x:     rand() * (totalSize + maxSize * 0.4) - maxSize * 0.2,
-      y:     rand() * (totalSize + maxSize * 0.4) - maxSize * 0.2,
+      x:     rand() * (canvasW + maxSize * 0.4) - maxSize * 0.2,
+      y:     rand() * (canvasH + maxSize * 0.4) - maxSize * 0.2,
       angle: (rand() - 0.5) * Math.PI * 2,
       alpha: 0.55 + rand() * 0.45,
       tint:  pick(theme.colors),
@@ -1330,10 +1569,8 @@ async function generateLevelImage(level, gridSize) {
   }
 
   const emojiImages = await Promise.all(emojiJobs.map(j => makeEmojiImage(j.emoji, j.size)));
-
   for (let i = 0; i < emojiJobs.length; i++) {
-    const j   = emojiJobs[i];
-    const img = emojiImages[i];
+    const j = emojiJobs[i], img = emojiImages[i];
     if (!img) continue;
     const dim = Math.ceil(j.size * 1.5);
     ctx.save();
@@ -1347,24 +1584,25 @@ async function generateLevelImage(level, gridSize) {
   }
 
   // ── Subtle vignette ──
-  const vg = ctx.createRadialGradient(totalSize/2, totalSize/2, totalSize*0.3, totalSize/2, totalSize/2, totalSize*0.8);
+  const vg = ctx.createRadialGradient(canvasW/2, canvasH/2, totalSize*0.3, canvasW/2, canvasH/2, totalSize*0.8);
   vg.addColorStop(0, 'transparent');
   vg.addColorStop(1, 'rgba(0,0,0,0.35)');
   ctx.fillStyle = vg;
-  ctx.fillRect(0, 0, totalSize, totalSize);
+  ctx.fillRect(0, 0, canvasW, canvasH);
 
   return canvas.toDataURL('image/png');
 }
 
+
 // Extract a specific tile from the full image
-function extractTile(fullImageDataUrl, row, col, gridSize) {
+function extractTile(fullImageDataUrl, row, col, cols, rows) {
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      const tileW = img.width / gridSize;
-      const tileH = img.height / gridSize;
+      const tileW = img.width  / cols;
+      const tileH = img.height / rows;
       const canvas = document.createElement('canvas');
-      canvas.width = tileW;
+      canvas.width  = tileW;
       canvas.height = tileH;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, col * tileW, row * tileH, tileW, tileH, 0, 0, tileW, tileH);
@@ -1376,11 +1614,6 @@ function extractTile(fullImageDataUrl, row, col, gridSize) {
 
 // ─── TIMER ────────────────────────────────────────────────────────────────────
 // Seconds allowed per level. Scales with grid size & tile count.
-function getLevelTime(gridSize) {
-  // base 20s for 2×2, +8s per extra row/col, +1s per extra tile beyond 4
-  const tiles = gridSize * gridSize;
-  return 20 + (gridSize - 2) * 8 + (tiles - 4) * 1;
-}
 
 let timerInterval = null;
 let timerSecondsLeft = 0;
@@ -1412,7 +1645,9 @@ function stopTimer() {
 }
 
 function addTime(seconds) {
-  timerSecondsLeft = Math.min(timerSecondsLeft + seconds, timerTotalSeconds);
+  // Always add the full amount — no cap at timerTotalSeconds
+  // Only cap at a generous ceiling (timerTotalSeconds + 120) to prevent absurd values
+  timerSecondsLeft = Math.min(timerSecondsLeft + seconds, timerTotalSeconds + 120);
   // If we were in panic mode and now have > 5s, exit panic
   if (inPanicMode && timerSecondsLeft > 5) {
     inPanicMode = false;
@@ -1500,7 +1735,9 @@ let state = {
   level: 1,
   score: 0,
   lives: 3,
-  gridSize: 2,
+  cols: 2,
+  rows: 2,
+  gridSize: 2, // legacy alias = cols
   revealedTiles: new Set(),
   revealQueue: [],
   currentTileIndex: 0,
@@ -1513,16 +1750,13 @@ let state = {
 // ─── REWARDS ──────────────────────────────────────────────────────────────────
 const REWARDS = {
   hint:      { emoji: '💡', label: 'Hint',        desc: 'Eliminate a wrong position', bg: '#fff9c4', glow: '#facc15', border: '#fde047' },
-  freeze:    { emoji: '⌛', label: 'Time Freeze', desc: '+10 seconds',                bg: '#cffafe', glow: '#22d3ee', border: '#67e8f9' },
+  freeze:    { emoji: '⌛', label: 'Time Freeze', desc: '+30 seconds',                bg: '#cffafe', glow: '#22d3ee', border: '#67e8f9' },
   shuffle:   { emoji: '🎲', label: 'Shuffle',     desc: 'Change current tile',        bg: '#ede9fe', glow: '#a78bfa', border: '#c4b5fd' },
   fullheart: { emoji: '❤️', label: 'Full Heart',  desc: 'Restore all 3 lives',        bg: '#ffe4e6', glow: '#fb7185', border: '#fda4af' },
 };
 const REWARD_KEYS = Object.keys(REWARDS);
 
 let playerRewards = {}; // e.g. { hint: 2, freeze: 1 }
-let tryAgainCount  = 0;  // how many times player tried again this level
-let nextRewardAt   = 2;  // tries needed until next reward (gap, not cumulative)
-let triesUntilNext = 2;  // countdown of tries remaining until next reward
 
 function pickRandomReward() {
   return REWARD_KEYS[Math.floor(Math.random() * REWARD_KEYS.length)];
@@ -1554,28 +1788,40 @@ function _renderRewardBarWith(counts, newKey) {
   if (!bar) return;
   bar.innerHTML = '';
 
-  const hasAny = REWARD_KEYS.some(k => counts[k] > 0);
-  if (!hasAny) return;
-
   REWARD_KEYS.forEach(key => {
     const count = counts[key] || 0;
-    if (count === 0) return;
-    const r = REWARDS[key];
+    const r     = REWARDS[key];
+    const empty = count === 0;
+
     const btn = document.createElement('button');
-    btn.className = 'reward-btn' + (key === newKey ? ' popping' : '');
-    btn.title = `${r.label}: ${r.desc}`;
-    btn.style.background = r.bg;
-    btn.style.borderColor = r.border;
-    btn.style.setProperty('--reward-glow', r.glow);
+    btn.className = 'reward-btn' + (key === newKey ? ' popping' : '') + (empty ? ' reward-empty' : '');
+    btn.title = empty ? `${r.label}: none left` : `${r.label}: ${r.desc}`;
+    btn.disabled = empty;
+
+    if (empty) {
+      btn.style.background   = 'var(--surface)';
+      btn.style.borderColor  = 'rgba(255,255,255,0.08)';
+      btn.style.setProperty('--reward-glow', 'transparent');
+    } else {
+      btn.style.background   = r.bg;
+      btn.style.borderColor  = r.border;
+      btn.style.setProperty('--reward-glow', r.glow);
+    }
+
     btn.innerHTML = `<span class="reward-emoji">${r.emoji}</span>`;
+
+    // Badge: only show count when > 1
     if (count > 1) {
       const badge = document.createElement('span');
       badge.className = 'reward-count';
       badge.style.color = r.glow;
+      badge.style.background = 'white';
+      badge.style.borderColor = 'currentColor';
       badge.textContent = count;
       btn.appendChild(badge);
     }
-    btn.onclick = () => activateReward(key, btn);
+
+    if (!empty) btn.onclick = () => activateReward(key, btn);
     bar.appendChild(btn);
   });
 }
@@ -1583,6 +1829,8 @@ function _renderRewardBarWith(counts, newKey) {
 function activateReward(key, btn) {
   if (!playerRewards[key] || playerRewards[key] <= 0) return;
   if (state.isAnimating) return;
+
+  playRewardActivationSound(key);
 
   // Animate out
   btn.classList.add('using');
@@ -1619,21 +1867,70 @@ function applyHint() {
 }
 
 function applyFreeze() {
-  addTime(10);
-  showToast('⌛ Time Freeze! +10 seconds added.');
+  addTime(30);
+  showToast('⌛ Time Freeze! +30 seconds added.');
+}
+
+async function animateShuffleCascade() {
+  const belt  = document.getElementById('queueBelt');
+  const tiles = [...belt.querySelectorAll('.q-tile')];
+  if (tiles.length === 0) return;
+
+  // Hop each tile left-to-right with a staggered delay
+  const HOP_STAGGER = 70; // ms between each tile's hop
+  const HOP_DUR     = 320;
+
+  tiles.forEach((tile, i) => {
+    setTimeout(() => {
+      tile.classList.remove('shuffle-hop', 'shuffle-land');
+      // Force reflow so re-adding the class retriggers the animation
+      void tile.offsetWidth;
+      tile.classList.add('shuffle-hop');
+    }, i * HOP_STAGGER);
+  });
+
+  // Wait for all hops to finish
+  await sleep(tiles.length * HOP_STAGGER + HOP_DUR);
+
+  // Rebuild belt with new queue order, then land the new current tile
+  buildQueueBelt(false);
+
+  const newCurrent = belt.querySelector('.q-tile.is-current');
+  if (newCurrent) {
+    newCurrent.classList.add('shuffle-land');
+  }
+
+  await sleep(420);
+  updateAvailableStates();
 }
 
 function applyShuffle() {
-  // Swap current tile with a later one in the queue
-  const cur = state.currentTileIndex;
-  const remaining = state.totalTiles - cur - 1;
-  if (remaining <= 0) { showToast('Nothing to shuffle!'); return; }
-  const swapOffset = 1 + Math.floor(Math.random() * remaining);
-  const swapIdx    = cur + swapOffset;
+  const cur         = state.currentTileIndex;
+  const currentTile = state.revealQueue[cur];
+
+  const available = getAvailableTiles();
+
+  const candidates = [];
+  for (let i = cur + 1; i < state.totalTiles; i++) {
+    const t = state.revealQueue[i];
+    if (available.has(t)) candidates.push(i);
+  }
+
+  if (candidates.length === 0) {
+    showToast('No other tile to shuffle to!');
+    return;
+  }
+
+  // Prefer a tile different from the current one
+  const preferred = candidates.filter(i => state.revealQueue[i] !== currentTile);
+  const pool      = preferred.length > 0 ? preferred : candidates;
+
+  const swapIdx = pool[Math.floor(Math.random() * pool.length)];
   [state.revealQueue[cur], state.revealQueue[swapIdx]] =
     [state.revealQueue[swapIdx], state.revealQueue[cur]];
-  updateNextTilePreview(false);
-  showToast('🎲 Shuffled! Current tile changed.');
+
+  animateShuffleCascade();
+  showToast('🎲 New tile to place!');
 }
 
 function applyFullHeart() {
@@ -1647,6 +1944,19 @@ function showToast(msg) {
   t.className = 'reward-toast';
   t.textContent = msg;
   document.body.appendChild(t);
+
+  // Position vertically centered on the reward bar
+  const rewardBar = document.getElementById('rewardBar');
+  if (rewardBar) {
+    const rect = rewardBar.getBoundingClientRect();
+    const barCenter = rect.top + rect.height / 2;
+    t.style.top = barCenter + 'px';
+    t.style.transform = 'translateX(-50%) translateY(-50%) translateY(10px)';
+    t.style.setProperty('--visible-transform', 'translateX(-50%) translateY(-50%)');
+  } else {
+    t.style.bottom = '140px';
+  }
+
   requestAnimationFrame(() => t.classList.add('visible'));
   setTimeout(() => {
     t.classList.remove('visible');
@@ -1654,26 +1964,92 @@ function showToast(msg) {
   }, 2200);
 }
 
-function getGridSize(level) {
-  // 2x2, 2x2, 3x3, 3x3, 4x4, 4x4, 5x5 ...
-  return Math.min(2 + Math.floor((level - 1) / 2), 7);
+// ─── WAVE DIFFICULTY ──────────────────────────────────────────────────────────
+// Wave cycle = 6 levels. Pattern within each cycle (1-indexed position):
+//   pos 1: easy entry      pos 4: hard climb
+//   pos 2: mild climb      pos 5: PEAK (hardest in cycle, reward on complete)
+//   pos 3: medium          pos 6: VALLEY (breather, generous time/preview)
+// Each full cycle the baseline floor rises slowly.
+// Level 1 is always a 2×2 warmup. Peaks grow harder each cycle rather than
+// always hitting max — 7×7 only appears at high cycle counts.
+
+const WAVE_CYCLE = 6;
+const SHAPE = [0.05, 0.15, 0.28, 0.44, 0.62, 0.12];
+
+function getLevelDifficulty(level) {
+  if (level === 1) return 0.0; // gentle 2×2 warmup
+  const cycle       = Math.floor((level - 1) / WAVE_CYCLE);
+  const pos         = ((level - 1) % WAVE_CYCLE) + 1;
+  const withinCycle = SHAPE[pos - 1];
+  const floor       = Math.min(cycle * 0.08, 0.45);
+  return floor + withinCycle * (1 - floor);
 }
 
-function getAdjacentIndices(idx, gridSize) {
-  const row = Math.floor(idx / gridSize);
-  const col = idx % gridSize;
+function isRewardLevel(level) {
+  const cycle = Math.floor((level - 1) / WAVE_CYCLE);
+  const pos   = ((level - 1) % WAVE_CYCLE) + 1;
+  // First cycle: every level is a reward (levels 1-6 are new, player needs encouragement)
+  if (cycle === 0) return level >= 2; // skip level 1 (warmup), reward from level 2 onward
+  // Later cycles: reward at pos 2 (mild climb), pos 4 (hard climb), pos 5 (peak)
+  return pos === 2 || pos === 4 || pos === 5;
+}
+
+function isPeakLevel(level) {
+  return level > 1 && ((level - 1) % WAVE_CYCLE) + 1 === 5;
+}
+
+function isValleyLevel(level) {
+  return level > 1 && ((level - 1) % WAVE_CYCLE) + 1 === 6;
+}
+
+// cols: 2..5 (width-constrained on portrait phone)
+// rows: 2..8 (height can go taller on portrait phone)
+function getGridDimensions(level) {
+  const d    = getLevelDifficulty(level);
+  const cols = Math.min(5, Math.max(2, Math.round(2 + d * 3)));
+  const rows = Math.min(8, Math.max(2, Math.round(2 + d * 6)));
+  return { cols, rows };
+}
+
+// Pattern complexity follows the same wave shape as difficulty but with its own amplitude.
+// At easy levels (pos 1-2): pc is low → edge-bleeding emojis, many, clustered.
+// At peak levels (pos 5):   pc is high → centered emojis, few, spread, overlapping.
+function getPatternComplexity(level) {
+  return getLevelDifficulty(level); // same wave, keeps both dimensions in sync
+}
+
+function getLevelTime(cols, rows, level) {
+  const d  = getLevelDifficulty(level);
+  const pc = getPatternComplexity(level);
+  const tiles = cols * rows;
+  // Base seconds per tile: easier patterns give less time (emojis help you place faster)
+  // Harder patterns give more time (harder to read, but not unfairly punishing)
+  const secsPerTile = 5.5 - d * 3.0 + pc * 2.5;
+  return Math.round(tiles * secsPerTile + 10);
+}
+
+function getQueuePreview(level) {
+  const d  = getLevelDifficulty(level);
+  const pc = getPatternComplexity(level);
+  // More preview at high pattern complexity (compensation for harder tiles)
+  return Math.min(5, Math.max(2, Math.round(5 - d * 2.0 + pc * 1.0)));
+}
+
+function getAdjacentIndices(idx, cols, rows) {
+  const row = Math.floor(idx / cols);
+  const col = idx % cols;
   const adjacent = [];
-  if (row > 0) adjacent.push((row-1)*gridSize + col);
-  if (row < gridSize-1) adjacent.push((row+1)*gridSize + col);
-  if (col > 0) adjacent.push(row*gridSize + (col-1));
-  if (col < gridSize-1) adjacent.push(row*gridSize + (col+1));
+  if (row > 0)        adjacent.push((row-1)*cols + col);
+  if (row < rows-1)   adjacent.push((row+1)*cols + col);
+  if (col > 0)        adjacent.push(row*cols + (col-1));
+  if (col < cols-1)   adjacent.push(row*cols + (col+1));
   return adjacent;
 }
 
 function getAvailableTiles() {
   const available = new Set();
   state.revealedTiles.forEach(idx => {
-    getAdjacentIndices(idx, state.gridSize).forEach(a => {
+    getAdjacentIndices(idx, state.cols, state.rows).forEach(a => {
       if (!state.revealedTiles.has(a)) available.add(a);
     });
   });
@@ -1681,28 +2057,21 @@ function getAvailableTiles() {
 }
 
 // Generate a reveal queue: start from random tile, expand adjacently (BFS-like but shuffled)
-function generateRevealQueue(gridSize) {
-  const total = gridSize * gridSize;
+function generateRevealQueue(cols, rows) {
+  const total = cols * rows;
   const startIdx = Math.floor(Math.random() * total);
-  const queue = [startIdx];
-  const used = new Set([startIdx]);
-
-  while (queue.length < total) {
-    // Find all frontier tiles (adjacent to already-queued)
-    const frontier = new Set();
-    used.forEach(idx => {
-      getAdjacentIndices(idx, gridSize).forEach(a => {
-        if (!used.has(a)) frontier.add(a);
-      });
-    });
-    // Pick random from frontier
-    const arr = [...frontier];
-    const pick = arr[Math.floor(Math.random() * arr.length)];
-    queue.push(pick);
-    used.add(pick);
+  const visited  = new Set([startIdx]);
+  const queue    = [startIdx];
+  const order    = [];
+  while (queue.length > 0) {
+    const idx = queue.shift();
+    order.push(idx);
+    const neighbors = getAdjacentIndices(idx, cols, rows)
+      .filter(n => !visited.has(n))
+      .sort(() => Math.random() - 0.5);
+    neighbors.forEach(n => { visited.add(n); queue.push(n); });
   }
-
-  return queue;
+  return order;
 }
 
 // ─── RENDERING ────────────────────────────────────────────────────────────────
@@ -1710,9 +2079,11 @@ const TILE_SIZE = 90;
 
 async function initLevel() {
   const level = state.level;
-  const gridSize = getGridSize(level);
-  state.gridSize = gridSize;
-  state.totalTiles = gridSize * gridSize;
+  const { cols, rows } = getGridDimensions(level);
+  state.cols = cols;
+  state.rows = rows;
+  state.gridSize = cols; // legacy alias used in a few places
+  state.totalTiles = cols * rows;
   state.revealedTiles = new Set();
   state.lives = 3;
   state.isAnimating = false;
@@ -1723,17 +2094,19 @@ async function initLevel() {
   currentThemeName = theme.name; // drive music style
   updateLivesDisplay();
 
-  // Generate image
-  state.fullImage = await generateLevelImage(level, gridSize);
+  // Generate image — pattern complexity drives visual difficulty
+  const pc = getPatternComplexity(level);
+  state.patternComplexity = pc;
+  state.fullImage = await generateLevelImage(level, cols, rows, pc);
 
   // Pre-extract all tile images
   state.tileImages = {};
   const extractPromises = [];
-  for (let r = 0; r < gridSize; r++) {
-    for (let c = 0; c < gridSize; c++) {
-      const idx = r * gridSize + c;
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
       extractPromises.push(
-        extractTile(state.fullImage, r, c, gridSize).then(url => {
+        extractTile(state.fullImage, r, c, cols, rows).then(url => {
           state.tileImages[idx] = url;
         })
       );
@@ -1742,11 +2115,11 @@ async function initLevel() {
   await Promise.all(extractPromises);
 
   // Generate reveal order
-  state.revealQueue = generateRevealQueue(gridSize);
+  state.revealQueue = generateRevealQueue(cols, rows);
   state.currentTileIndex = 0;
 
   // Build grid DOM
-  buildGrid(gridSize);
+  buildGrid(cols, rows);
 
   // Reveal first tile automatically
   await revealFirstTile();
@@ -1755,18 +2128,18 @@ async function initLevel() {
   updateNextTilePreview();
   updateProgress();
 
-  // Start level countdown
-  startTimer(getLevelTime(gridSize));
+  // Start level countdown (wave-aware time)
+  startTimer(getLevelTime(cols, rows, level));
 }
 
-function buildGrid(gridSize) {
+function buildGrid(cols, rows) {
   const grid = document.getElementById('grid');
-  const tileSize = getTileDisplaySize(gridSize);
-  grid.style.gridTemplateColumns = `repeat(${gridSize}, ${tileSize}px)`;
-  grid.style.gridTemplateRows = `repeat(${gridSize}, ${tileSize}px)`;
+  const tileSize = getTileDisplaySize(cols, rows);
+  grid.style.gridTemplateColumns = `repeat(${cols}, ${tileSize}px)`;
+  grid.style.gridTemplateRows = `repeat(${rows}, ${tileSize}px)`;
   grid.innerHTML = '';
 
-  for (let i = 0; i < gridSize * gridSize; i++) {
+  for (let i = 0; i < cols * rows; i++) {
     const tile = document.createElement('div');
     tile.className = 'tile';
     tile.dataset.idx = i;
@@ -1834,28 +2207,42 @@ function updateAvailableStates() {
   });
 }
 
-// How many upcoming tiles to preview (besides the current one)
-const QUEUE_PREVIEW = 4;
+// Queue preview count is now wave-aware — see getQueuePreview(level)
+function getCurrentQueuePreview() {
+  return getQueuePreview(state.level);
+}
 
-function getTileDisplaySize(gridSize) {
-  // Reserve space for: header ~70px, progress bar ~16px, next section ~130px, gaps ~50px
-  const reserved = 70 + 16 + 130 + 50;
-  const availH = (window.innerHeight - reserved) / gridSize;
-  const availW = (Math.min(window.innerWidth, 660) - 48) / gridSize;
-  return Math.floor(Math.min(availH, availW, 110));
+function getTileDisplaySize(cols, rows) {
+  const appEl  = document.getElementById('app');
+  const appW   = appEl ? appEl.clientWidth : Math.min(window.innerWidth, 430);
+
+  // Fixed heights (always present):
+  //   header: 52px, progress bar: 4px, reward bar: 62px (always reserved),
+  //   queue section: queueTile + 28px, gaps: 6px * 4 = 24px, bottom pad: 8px
+  const queueTile = Math.min(Math.max(Math.floor(appW / cols * 0.9), 50), 90);
+  const fixedH    = 52 + 4 + 62 + (queueTile + 48) + 40;
+
+  const availH = (window.innerHeight - fixedH) / rows;
+  const availW = (appW - 6) / cols;
+
+  return Math.max(Math.floor(Math.min(availH, availW)), 28);
+}
+
+function appOuter() {
+  return window.innerHeight;
 }
 
 function buildQueueBelt(growing = false) {
   const belt = document.getElementById('queueBelt');
-  const gridSize = state.gridSize;
-  const tileBase = getTileDisplaySize(gridSize);
-  const currentSize = Math.min(Math.max(tileBase * 1.5, 72), 110);
-  const smallSize = Math.round(currentSize * 0.62);
+  const { cols, rows } = state;
+  const tileBase    = getTileDisplaySize(cols, rows);
+  const currentSize = Math.min(Math.max(Math.round(tileBase * 1.2), 52), 90);
+  const smallSize   = Math.round(currentSize * 0.65);
   const scaleFrom = (smallSize / currentSize).toFixed(4);
 
   belt.innerHTML = '';
 
-  for (let slot = QUEUE_PREVIEW; slot >= 0; slot--) {
+  for (let slot = getCurrentQueuePreview(); slot >= 0; slot--) {
     const queuePos = state.currentTileIndex + slot;
     const isCurrentSlot = slot === 0;
     // All tiles rendered at their true pixel size — scale handles visual grow
@@ -1897,10 +2284,10 @@ function buildQueueBelt(growing = false) {
 
 async function slideQueueBelt() {
   const belt = document.getElementById('queueBelt');
-  const gridSize = state.gridSize;
-  const tileBase = getTileDisplaySize(gridSize);
-  const currentSize = Math.min(Math.max(tileBase * 1.5, 72), 110);
-  const smallSize = Math.round(currentSize * 0.62);
+  const { cols, rows } = state;
+  const tileBase    = getTileDisplaySize(cols, rows);
+  const currentSize = Math.min(Math.max(Math.round(tileBase * 1.2), 52), 90);
+  const smallSize   = Math.round(currentSize * 0.65);
   const DURATION = 400;
 
   // Calculate how far the belt needs to slide: one small-tile-width + gap
@@ -2001,7 +2388,7 @@ async function handleTileClick(clickedIdx) {
       await sleep(400);
       tileEl.classList.remove('flash-correct');
       await sleep(100);
-      showLevelComplete();
+      await showLevelComplete();
     } else {
       addTime(5);
       // Start belt slide immediately and wait for it to finish before unlocking
@@ -2035,7 +2422,7 @@ async function handleTileClick(clickedIdx) {
 }
 
 // ─── OVERLAYS ─────────────────────────────────────────────────────────────────
-function showLevelComplete() {
+async function showLevelComplete() {
   stopTimer();
   stopMusic();
   // If player finished during panic mode, play the "saved!" cheer; otherwise victory
@@ -2044,20 +2431,35 @@ function showLevelComplete() {
   } else {
     playVictorySound();
   }
-  // Build completed preview
+  // Build completed preview — match the exact cols×rows of the finished level
   const preview = document.getElementById('completedPreview');
-  preview.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+  const { cols, rows } = state;
+
+  // Compute tile size to fit within max bounds while preserving aspect ratio
+  const MAX_W = 220, MAX_H = 280;
+  const tileW = Math.floor(Math.min(MAX_W / cols, MAX_H / rows));
+  const previewW = tileW * cols + 2 * (cols - 1); // include gap
+  const previewH = tileW * rows + 2 * (rows - 1);
+
+  preview.style.gridTemplateColumns = `repeat(${cols}, ${tileW}px)`;
+  preview.style.gridTemplateRows    = `repeat(${rows}, ${tileW}px)`;
+  preview.style.width  = previewW + 'px';
+  preview.style.height = previewH + 'px';
   preview.innerHTML = '';
+
   for (let i = 0; i < state.totalTiles; i++) {
     const img = document.createElement('img');
     img.src = state.tileImages[i];
     preview.appendChild(img);
   }
 
-  const nextGrid = getGridSize(state.level + 1);
-  const nextTheme = getLevelTheme(state.level + 1);
+  const { cols: nextCols, rows: nextRows } = getGridDimensions(state.level + 1);
+  const nextTheme  = getLevelTheme(state.level + 1);
+  const nextIsPeak   = isPeakLevel(state.level + 1);
+  const nextIsValley = isValleyLevel(state.level + 1);
+  const nextLabel    = nextIsPeak ? ' · 🔥 Peak ahead!' : nextIsValley ? ' · 😌 Breather next' : '';
   document.getElementById('levelCompleteSub').textContent =
-    `Score: ${state.score} pts  ·  Next: ${nextTheme.emoji[0]} ${nextTheme.name} · ${nextGrid}×${nextGrid} grid`;
+    `Score: ${state.score} pts  ·  Next: ${nextTheme.emoji[0]} ${nextTheme.name} · ${nextCols}×${nextRows}${nextLabel}`;
 
   document.getElementById('levelCompleteOverlay').classList.add('active');
 }
@@ -2081,9 +2483,6 @@ async function startGame() {
   state.level = 1;
   state.score = 0;
   playerRewards = {}; // fresh start
-  tryAgainCount  = 0;
-  nextRewardAt   = 2;
-  triesUntilNext = 2;
   hideOverlays();
   await initLevel();   // sets currentThemeName first
   renderRewardBar();
@@ -2091,15 +2490,22 @@ async function startGame() {
 }
 
 async function nextLevel() {
+  const prevLevel = state.level; // capture before incrementing
   state.level++;
-  tryAgainCount  = 0;
-  nextRewardAt   = 2;
-  triesUntilNext = 2;
   hideOverlays();
   stopMusic();
   await initLevel();
   renderRewardBar();
   startMusic();
+
+  // If the completed level earned a reward, show it now over the fresh grid
+  if (isRewardLevel(prevLevel)) {
+    stopTimer();
+    const rewardsSnapshot = { ...playerRewards };
+    const rewarded = pickRandomReward();
+    await showRewardReveal(rewarded, rewardsSnapshot);
+    startTimer(timerSecondsLeft);
+  }
 }
 
 async function restartLevel() {
@@ -2136,30 +2542,8 @@ async function showRewardedAd() {
   clearInterval(tick);
   adOverlay.classList.remove('active');
 
-  // Track try-agains; reward when the gap countdown hits zero
-  tryAgainCount++;
-  triesUntilNext--;
-  const earnedReward = triesUntilNext <= 0;
-  if (earnedReward) {
-    nextRewardAt++;          // next gap is one longer
-    triesUntilNext = nextRewardAt; // reset countdown to new gap
-  }
-
-  // Snapshot current rewards BEFORE restart (so bar shows old state during animation)
-  const rewardsSnapshot = { ...playerRewards };
-
-  // Pick the reward key now (before restart) if one was earned
-  const rewarded = earnedReward ? pickRandomReward() : null;
-
-  // Restart level first so the fresh grid is visible behind the reveal
+  // Restart level — no reward from ads, rewards come from completing peak levels
   await restartLevel();
-
-  // Pause timer while reward reveal plays (only if showing reveal)
-  if (earnedReward) {
-    stopTimer();
-    await showRewardReveal(rewarded, rewardsSnapshot);
-    startTimer(timerSecondsLeft);
-  }
 }
 
 async function showRewardReveal(key, snapshot) {
@@ -3243,6 +3627,138 @@ function playCorrectSound() {
   }
 }
 
+// ── Reward activation sounds ──────────────────────────────────────────────────
+
+// 💡 Hint — soft "ding" + light shimmer, like a lightbulb flickering on
+function playHintSound() {
+  if (isMuted || !audioCtx || audioCtx.state === 'suspended') return;
+  const ctx = audioCtx, now = ctx.currentTime;
+  // Warm "click" thump
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.06), ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.008));
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const g = ctx.createGain(); g.gain.value = 0.18;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+  src.connect(lp); lp.connect(g); g.connect(ctx.destination);
+  src.start(now);
+  // Rising two-note chime: E5 → B5
+  [[329.63, 0.04], [987.77, 0.14]].forEach(([freq, t]) => {
+    const o = ctx.createOscillator(), og = ctx.createGain();
+    o.type = 'triangle'; o.frequency.value = freq;
+    og.gain.setValueAtTime(0, now + t);
+    og.gain.linearRampToValueAtTime(0.38, now + t + 0.01);
+    og.gain.exponentialRampToValueAtTime(0.001, now + t + 0.3);
+    o.connect(og); og.connect(ctx.destination);
+    o.start(now + t); o.stop(now + t + 0.35);
+  });
+}
+
+// ⌛ Freeze — icy descending crystalline sweep, cold and spacious
+function playFreezeSound() {
+  if (isMuted || !audioCtx || audioCtx.state === 'suspended') return;
+  const ctx = audioCtx, now = ctx.currentTime;
+  // Descending crystal tones
+  const notes = [
+    [2093, 0.00], [1760, 0.08], [1397, 0.16], [1047, 0.24], [880, 0.32],
+  ];
+  notes.forEach(([freq, t]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, now + t);
+    g.gain.linearRampToValueAtTime(0.22, now + t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.001, now + t + 0.35);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(now + t); o.stop(now + t + 0.4);
+    // Shimmer overtone
+    const o2 = ctx.createOscillator(), g2 = ctx.createGain();
+    o2.type = 'sine'; o2.frequency.value = freq * 1.5;
+    g2.gain.setValueAtTime(0, now + t);
+    g2.gain.linearRampToValueAtTime(0.07, now + t + 0.008);
+    g2.gain.exponentialRampToValueAtTime(0.001, now + t + 0.2);
+    o2.connect(g2); g2.connect(ctx.destination);
+    o2.start(now + t); o2.stop(now + t + 0.25);
+  });
+  // Low whoosh
+  const wo = ctx.createOscillator(), wg = ctx.createGain();
+  wo.type = 'sawtooth'; wo.frequency.setValueAtTime(280, now);
+  wo.frequency.exponentialRampToValueAtTime(60, now + 0.55);
+  const wf = ctx.createBiquadFilter(); wf.type = 'lowpass'; wf.frequency.value = 400;
+  wg.gain.setValueAtTime(0.12, now); wg.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+  wo.connect(wf); wf.connect(wg); wg.connect(ctx.destination);
+  wo.start(now); wo.stop(now + 0.6);
+}
+
+// 🎲 Shuffle — playful bouncy rattle, like dice tumbling
+function playShuffleSound() {
+  if (isMuted || !audioCtx || audioCtx.state === 'suspended') return;
+  const ctx = audioCtx, now = ctx.currentTime;
+  // 5 quick noise bursts with slight pitch variation — dice rattle
+  for (let i = 0; i < 5; i++) {
+    const t = now + i * 0.055;
+    const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.04), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * Math.exp(-j / (ctx.sampleRate * 0.012));
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass';
+    bp.frequency.value = 800 + Math.random() * 1200; bp.Q.value = 1.5;
+    const g = ctx.createGain(); g.gain.value = 0.25 - i * 0.03;
+    src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+    src.start(t);
+  }
+  // Final landing "thud" + bright note
+  const landT = now + 0.30;
+  const o = ctx.createOscillator(), og = ctx.createGain();
+  o.type = 'triangle'; o.frequency.value = 523.25; // C5
+  og.gain.setValueAtTime(0, landT);
+  og.gain.linearRampToValueAtTime(0.45, landT + 0.01);
+  og.gain.exponentialRampToValueAtTime(0.001, landT + 0.22);
+  o.connect(og); og.connect(ctx.destination);
+  o.start(landT); o.stop(landT + 0.25);
+}
+
+// ❤️ Full Heart — warm, full, rising chord swell like a heartbeat restored
+function playFullHeartSound() {
+  if (isMuted || !audioCtx || audioCtx.state === 'suspended') return;
+  const ctx = audioCtx, now = ctx.currentTime;
+  // Soft thud (heartbeat pulse)
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.12), ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.03));
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 200;
+  const g0 = ctx.createGain(); g0.gain.value = 0.5;
+  src.connect(lp); lp.connect(g0); g0.connect(ctx.destination);
+  src.start(now);
+  // Warm rising triad: C4 → E4 → G4 → C5
+  [[261.63, 0.06], [329.63, 0.14], [392.00, 0.22], [523.25, 0.30]].forEach(([freq, t]) => {
+    const o = ctx.createOscillator(), og = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    og.gain.setValueAtTime(0, now + t);
+    og.gain.linearRampToValueAtTime(0.30, now + t + 0.02);
+    og.gain.exponentialRampToValueAtTime(0.001, now + t + 0.45);
+    o.connect(og); og.connect(ctx.destination);
+    o.start(now + t); o.stop(now + t + 0.5);
+    // Soft second harmonic
+    const o2 = ctx.createOscillator(), og2 = ctx.createGain();
+    o2.type = 'triangle'; o2.frequency.value = freq * 2;
+    og2.gain.setValueAtTime(0, now + t);
+    og2.gain.linearRampToValueAtTime(0.08, now + t + 0.02);
+    og2.gain.exponentialRampToValueAtTime(0.001, now + t + 0.3);
+    o2.connect(og2); og2.connect(ctx.destination);
+    o2.start(now + t); o2.stop(now + t + 0.35);
+  });
+}
+
+function playRewardActivationSound(key) {
+  switch (key) {
+    case 'hint':      playHintSound();      break;
+    case 'freeze':    playFreezeSound();    break;
+    case 'shuffle':   playShuffleSound();   break;
+    case 'fullheart': playFullHeartSound(); break;
+  }
+}
+
 function startMusic() {
   if (isMuted) return;
   if (!audioCtx) {
@@ -3281,6 +3797,30 @@ function stopMusic() {
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 // Show start overlay (already active), wait for user to press start
+
+// Rebuild grid layout on resize / orientation change
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    if (state.totalTiles > 0 && state.revealedTiles !== undefined) {
+      buildGrid(state.cols, state.rows);
+      // Re-mark revealed tiles
+      state.revealedTiles.forEach(idx => {
+        const el = getTileEl(idx);
+        if (el) {
+          el.classList.add('revealed');
+          const img = el.querySelector('img');
+          if (img) { img.style.opacity = '1'; img.style.transform = 'scale(1)'; }
+        }
+      });
+      updateAvailableStates();
+      buildQueueBelt();
+    }
+  }, 120);
+});
 </script>
+</body>
+
 </body>
 </html>
