@@ -1101,7 +1101,7 @@
     <div class="overlay-title good" id="levelCompleteTitle">LEVEL COMPLETE!</div>
     <div class="completed-grid" id="completedPreview"></div>
     <div class="overlay-sub" id="levelCompleteSub">Great job! Next level has a bigger grid.</div>
-    <button class="btn btn-primary" id="nextLevelBtn" onclick="nextLevel()">NEXT LEVEL →</button>
+    <button class="btn btn-primary" id="nextLevelBtn" onclick="this.disabled=true;nextLevel()">NEXT LEVEL →</button>
   </div>
 </div>
 
@@ -2429,6 +2429,7 @@ async function handleTileClick(clickedIdx) {
       await sleep(400);
       tileEl.classList.remove('flash-correct');
       await sleep(100);
+      state.isAnimating = false; // clear before showing overlay so nextLevel can run cleanly
       await showLevelComplete();
     } else {
       addTime(5);
