@@ -27,6 +27,14 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* Prevent text selection and tap highlight across all interactive elements */
+  button, a, [onclick] {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   html, body {
     width: 100%;
     height: 100%;
@@ -664,6 +672,10 @@
     border-radius: 99px;
     cursor: pointer;
     transition: all 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .btn-primary {
@@ -2394,6 +2406,7 @@ function getTileEl(idx) {
 
 // ─── GAME LOGIC ───────────────────────────────────────────────────────────────
 async function handleTileClick(clickedIdx) {
+  if (isTransitioning) return;
   if (state.isAnimating) return;
   if (state.revealedTiles.has(clickedIdx)) return;
   if (state.currentTileIndex >= state.totalTiles) return;
@@ -2429,7 +2442,8 @@ async function handleTileClick(clickedIdx) {
       await sleep(400);
       tileEl.classList.remove('flash-correct');
       await sleep(100);
-      state.isAnimating = false; // clear before showing overlay so nextLevel can run cleanly
+      state.isAnimating = false;
+      isTransitioning = false; // ensure nextLevel button works when overlay appears
       await showLevelComplete();
     } else {
       addTime(5);
@@ -2547,35 +2561,37 @@ async function nextLevel() {
   if (isTransitioning) return;
   isTransitioning = true;
 
-  // Disable button immediately
   const nextBtn = document.getElementById('nextLevelBtn');
   if (nextBtn) nextBtn.disabled = true;
 
-  const prevLevel = state.level;
-  state.level++;
-  saveLevel(state.level);
-  hideOverlays();
-  stopMusic();
+  try {
+    const prevLevel = state.level;
+    state.level++;
+    saveLevel(state.level);
+    hideOverlays();
+    stopMusic();
 
-  // Show interstitial ad before loading next level
-  if (shouldShowInterstitial(prevLevel)) {
-    await showInterstitialAd();
+    if (shouldShowInterstitial(prevLevel)) {
+      await showInterstitialAd();
+    }
+
+    await initLevel();
+    renderRewardBar();
+    startMusic();
+
+    if (isRewardLevel(prevLevel)) {
+      stopTimer();
+      const rewardsSnapshot = { ...playerRewards };
+      const rewarded = pickRandomReward();
+      await showRewardReveal(rewarded, rewardsSnapshot);
+      startTimer(timerSecondsLeft);
+    }
+  } catch(e) {
+    console.error('nextLevel error:', e);
+  } finally {
+    isTransitioning = false;
+    if (nextBtn) nextBtn.disabled = false;
   }
-
-  await initLevel();
-  renderRewardBar();
-  startMusic();
-
-  // If the completed level earned a reward, show it now over the fresh grid
-  if (isRewardLevel(prevLevel)) {
-    stopTimer();
-    const rewardsSnapshot = { ...playerRewards };
-    const rewarded = pickRandomReward();
-    await showRewardReveal(rewarded, rewardsSnapshot);
-    startTimer(timerSecondsLeft);
-  }
-
-  isTransitioning = false;
 }
 
 function restartGame() {
