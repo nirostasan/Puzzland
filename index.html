@@ -1208,11 +1208,40 @@
     <div class="overlay-title bad">GAME OVER</div>
     <div class="overlay-sub" id="gameOverSub">You ran out of lives.<br>Better luck next time!</div>
     <button class="btn btn-primary" onclick="showRewardedAd()">TRY AGAIN</button>
-    <button class="btn btn-secondary" onclick="startGame()">RESTART GAME</button>
+    <button class="btn btn-secondary" onclick="restartGame()">RESTART GAME</button>
   </div>
 </div>
 
-<!-- Rewarded Ad Overlay -->
+<!-- Interstitial Ad Overlay -->
+<div class="overlay" id="interstitialAdOverlay">
+  <div class="ad-box">
+    <div class="ad-label">Advertisement</div>
+    <div class="ad-placeholder">
+      <div class="ad-icon">📢</div>
+      <div class="ad-title">Your Ad Here</div>
+      <div class="ad-sub">Interstitial Ad Placeholder</div>
+    </div>
+    <div class="ad-skip-wrap">
+      <div class="ad-timer-bar"><div class="ad-timer-fill" id="interstitialTimerFill" style="animation-duration:5s"></div></div>
+      <div class="ad-skip-text">Skip in <span id="interstitialCountdown">5</span>s</div>
+    </div>
+    <button class="btn btn-secondary" id="interstitialSkipBtn" onclick="skipInterstitialAd()" style="display:none;width:100%;">SKIP →</button>
+  </div>
+</div>
+
+<!-- Restart Confirm Dialog -->
+<div class="overlay" id="restartConfirmOverlay">
+  <div class="overlay-box" style="gap:16px;padding:36px 32px;">
+    <div class="overlay-icon">⚠️</div>
+    <div class="overlay-title" style="font-size:1.2rem;line-height:1.3;">Restart the game from level 1 and delete your saved progress?</div>
+    <div style="display:flex;gap:12px;width:100%;margin-top:4px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="hideRestartConfirm()">No</button>
+      <button class="btn btn-primary" style="flex:1;background:var(--accent2);border-color:var(--accent2);" onclick="confirmRestart()">Yes</button>
+    </div>
+  </div>
+</div>
+
+
 <div class="overlay" id="adOverlay">
   <div class="ad-box">
     <div class="ad-label">Advertisement</div>
@@ -2487,25 +2516,41 @@ function showGameOver() {
 }
 
 function hideOverlays() {
-  document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+  document.querySelectorAll('.overlay').forEach(o => {
+    if (o.id !== 'interstitialAdOverlay') o.classList.remove('active');
+  });
+}
+
+function saveLevel(val) {
+  try { localStorage.setItem('puzzland_level', val); } catch(e) {}
+}
+function loadLevel() {
+  try { return Math.max(1, parseInt(localStorage.getItem('puzzland_level')) || 1); } catch(e) { return 1; }
 }
 
 async function startGame() {
   stopTimer();
-  state.level = 1;
+  state.level = loadLevel();
   state.score = 0;
-  playerRewards = {}; // fresh start
+  playerRewards = {};
   hideOverlays();
-  await initLevel();   // sets currentThemeName first
+  await initLevel();
   renderRewardBar();
   startMusic();
 }
 
 async function nextLevel() {
-  const prevLevel = state.level; // capture before incrementing
+  const prevLevel = state.level;
   state.level++;
+  saveLevel(state.level);
   hideOverlays();
   stopMusic();
+
+  // Show interstitial ad before loading next level (Option A: valley + every other peak)
+  if (shouldShowInterstitial(prevLevel)) {
+    await showInterstitialAd();
+  }
+
   await initLevel();
   renderRewardBar();
   startMusic();
@@ -2518,6 +2563,79 @@ async function nextLevel() {
     await showRewardReveal(rewarded, rewardsSnapshot);
     startTimer(timerSecondsLeft);
   }
+}
+
+function restartGame() {
+  document.getElementById('restartConfirmOverlay').classList.add('active');
+}
+
+function hideRestartConfirm() {
+  document.getElementById('restartConfirmOverlay').classList.remove('active');
+}
+
+function confirmRestart() {
+  hideRestartConfirm();
+  saveLevel(1);
+  startGame();
+}
+
+// ─── INTERSTITIAL AD ─────────────────────────────────────────────────────────
+// Option A: show at valley (pos 6) AND every other peak (pos 5, alternating cycles)
+
+let _interstitialResolve = null;
+let _interstitialTick    = null;
+let _interstitialTimeout = null;
+
+function shouldShowInterstitial(level) {
+  if (level <= 1) return false;
+  const pos = ((level - 1) % WAVE_CYCLE) + 1;
+  // Every peak (pos 5) and every valley (pos 6)
+  return pos === 3 || pos === 5 || pos === 6;
+}
+
+function showInterstitialAd() {
+  return new Promise(resolve => {
+    _interstitialResolve = resolve;
+
+    const overlay   = document.getElementById('interstitialAdOverlay');
+    const fill      = document.getElementById('interstitialTimerFill');
+    const countdown = document.getElementById('interstitialCountdown');
+    const skipBtn   = document.getElementById('interstitialSkipBtn');
+
+    // Reset
+    skipBtn.style.display = 'none';
+    countdown.textContent = '5';
+    fill.style.animation  = 'none';
+    fill.getBoundingClientRect();
+    fill.style.animation  = 'adDrain 5s linear forwards';
+
+    overlay.classList.add('active');
+
+    let t = 5;
+    _interstitialTick = setInterval(() => {
+      t--;
+      countdown.textContent = Math.max(t, 0);
+      if (t <= 0) {
+        clearInterval(_interstitialTick);
+        _interstitialTick = null;
+        skipBtn.style.display = 'block';
+        countdown.parentElement.textContent = 'Ready!';
+      }
+    }, 1000);
+
+    _interstitialTimeout = setTimeout(() => {
+      skipInterstitialAd();
+    }, 5500);
+  });
+}
+
+function skipInterstitialAd() {
+  clearInterval(_interstitialTick);
+  clearTimeout(_interstitialTimeout);
+  _interstitialTick    = null;
+  _interstitialTimeout = null;
+  document.getElementById('interstitialAdOverlay').classList.remove('active');
+  if (_interstitialResolve) { _interstitialResolve(); _interstitialResolve = null; }
 }
 
 async function restartLevel() {
@@ -2670,7 +2788,14 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ─── MUSIC ────────────────────────────────────────────────────────────────────
 let musicPlaying = false;
-let isMuted = false;
+let isMuted = loadMuted();
+
+function saveMuted(val) {
+  try { localStorage.setItem('puzzland_muted', val); } catch(e) {}
+}
+function loadMuted() {
+  try { return localStorage.getItem('puzzland_muted') === 'true'; } catch(e) { return false; }
+}
 let loopTimeout  = null;
 let nextLoopTime = 0;
 let audioCtx     = null;
@@ -3123,9 +3248,10 @@ function initMusic(actx) {
 }
 
 function toggleMute() {
-  const btn = document.getElementById('muteBtn');
+  const btn   = document.getElementById('muteBtn');
   const slash = document.getElementById('muteSlash');
   isMuted = !isMuted;
+  saveMuted(isMuted);
   if (isMuted) {
     stopMusic();
     if (panicGain) { try { panicGain.disconnect(); } catch(e) {} panicGain = null; }
@@ -3137,6 +3263,16 @@ function toggleMute() {
     btn.classList.remove('muted');
   }
 }
+
+// Apply saved mute state to button on load
+document.addEventListener('DOMContentLoaded', () => {
+  if (isMuted) {
+    const btn   = document.getElementById('muteBtn');
+    const slash = document.getElementById('muteSlash');
+    if (btn)   btn.classList.add('muted');
+    if (slash) slash.setAttribute('display', 'inline');
+  }
+});
 
 let panicGain = null;
 let inPanicMode = false;
