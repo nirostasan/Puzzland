@@ -2467,6 +2467,9 @@ async function handleTileClick(clickedIdx) {
 async function showLevelComplete() {
   stopTimer();
   stopMusic();
+  // Re-enable next level button in case it was disabled from previous level
+  const nextBtn = document.getElementById('nextLevelBtn');
+  if (nextBtn) nextBtn.disabled = false;
   // If player finished during panic mode, play the "saved!" cheer; otherwise victory
   if (timerSecondsLeft <= 5 && timerSecondsLeft > 0) {
     playIAmSaved();
