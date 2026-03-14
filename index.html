@@ -2439,20 +2439,22 @@ async function handleTileClick(clickedIdx) {
     updateProgress();
 
     if (state.revealedTiles.size === state.totalTiles) {
+      // Last tile — clear belt immediately so no "remaining tile" flicker
+      document.getElementById('queueBelt').innerHTML = '';
       await sleep(400);
       tileEl.classList.remove('flash-correct');
       await sleep(100);
       state.isAnimating = false;
-      isTransitioning = false; // ensure nextLevel button works when overlay appears
+      isTransitioning = false;
       await showLevelComplete();
+      return; // ← early return: never fall through to isAnimating=false below
     } else {
       addTime(5);
-      // Start belt slide immediately and wait for it to finish before unlocking
       updateNextTilePreview(true);
       await sleep(420);
       tileEl.classList.remove('flash-correct');
+      state.isAnimating = false;
     }
-    state.isAnimating = false;
   } else {
     // WRONG
     playWrongSound();
@@ -2479,22 +2481,25 @@ async function handleTileClick(clickedIdx) {
 
 // ─── OVERLAYS ─────────────────────────────────────────────────────────────────
 async function showLevelComplete() {
+  if (isTransitioning) return; // prevent concurrent calls
   stopTimer();
   stopMusic();
-  // If player finished during panic mode, play the "saved!" cheer; otherwise victory
+
   if (timerSecondsLeft <= 5 && timerSecondsLeft > 0) {
     playIAmSaved();
   } else {
     playVictorySound();
   }
-  // Build completed preview — match the exact cols×rows of the finished level
-  const preview = document.getElementById('completedPreview');
-  const { cols, rows } = state;
 
-  // Compute tile size to fit within max bounds while preserving aspect ratio
+  const preview = document.getElementById('completedPreview');
+  const sub     = document.getElementById('levelCompleteSub');
+  const overlay = document.getElementById('levelCompleteOverlay');
+  if (!preview || !sub || !overlay) return; // DOM not ready — bail safely
+
+  const { cols, rows } = state;
   const MAX_W = 220, MAX_H = 280;
-  const tileW = Math.floor(Math.min(MAX_W / cols, MAX_H / rows));
-  const previewW = tileW * cols + 2 * (cols - 1); // include gap
+  const tileW    = Math.floor(Math.min(MAX_W / cols, MAX_H / rows));
+  const previewW = tileW * cols + 2 * (cols - 1);
   const previewH = tileW * rows + 2 * (rows - 1);
 
   preview.style.gridTemplateColumns = `repeat(${cols}, ${tileW}px)`;
@@ -2510,14 +2515,13 @@ async function showLevelComplete() {
   }
 
   const { cols: nextCols, rows: nextRows } = getGridDimensions(state.level + 1);
-  const nextTheme  = getLevelTheme(state.level + 1);
-  const nextIsPeak   = isPeakLevel(state.level + 1);
+  const nextTheme   = getLevelTheme(state.level + 1);
+  const nextIsPeak  = isPeakLevel(state.level + 1);
   const nextIsValley = isValleyLevel(state.level + 1);
-  const nextLabel    = nextIsPeak ? ' · 🔥 Peak ahead!' : nextIsValley ? ' · 😌 Breather next' : '';
-  document.getElementById('levelCompleteSub').textContent =
-    `Score: ${state.score} pts  ·  Next: ${nextTheme.emoji[0]} ${nextTheme.name} · ${nextCols}×${nextRows}${nextLabel}`;
+  const nextLabel   = nextIsPeak ? ' · 🔥 Peak ahead!' : nextIsValley ? ' · 😌 Breather next' : '';
+  sub.textContent   = `Score: ${state.score} pts  ·  Next: ${nextTheme.emoji[0]} ${nextTheme.name} · ${nextCols}×${nextRows}${nextLabel}`;
 
-  document.getElementById('levelCompleteOverlay').classList.add('active');
+  overlay.classList.add('active');
 }
 
 function showGameOver() {
@@ -2648,7 +2652,7 @@ function showInterstitialAd() {
         clearInterval(_interstitialTick);
         _interstitialTick = null;
         skipBtn.style.display = 'block';
-        countdown.parentElement.textContent = 'Ready!';
+        countdown.textContent = 'Ready!';
       }
     }, 1000);
 
