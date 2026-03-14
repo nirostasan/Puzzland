@@ -1101,7 +1101,7 @@
     <div class="overlay-title good" id="levelCompleteTitle">LEVEL COMPLETE!</div>
     <div class="completed-grid" id="completedPreview"></div>
     <div class="overlay-sub" id="levelCompleteSub">Great job! Next level has a bigger grid.</div>
-    <button class="btn btn-primary" id="nextLevelBtn" onclick="this.disabled=true;nextLevel()">NEXT LEVEL →</button>
+    <button class="btn btn-primary" id="nextLevelBtn" onclick="nextLevel()">NEXT LEVEL →</button>
   </div>
 </div>
 
@@ -2467,9 +2467,6 @@ async function handleTileClick(clickedIdx) {
 async function showLevelComplete() {
   stopTimer();
   stopMusic();
-  // Re-enable next level button in case it was disabled from previous level
-  const nextBtn = document.getElementById('nextLevelBtn');
-  if (nextBtn) nextBtn.disabled = false;
   // If player finished during panic mode, play the "saved!" cheer; otherwise victory
   if (timerSecondsLeft <= 5 && timerSecondsLeft > 0) {
     playIAmSaved();
@@ -2533,6 +2530,7 @@ function loadLevel() {
 }
 
 async function startGame() {
+  isTransitioning = false;
   stopTimer();
   state.level = loadLevel();
   state.score = 0;
@@ -2543,14 +2541,23 @@ async function startGame() {
   startMusic();
 }
 
+let isTransitioning = false;
+
 async function nextLevel() {
+  if (isTransitioning) return;
+  isTransitioning = true;
+
+  // Disable button immediately
+  const nextBtn = document.getElementById('nextLevelBtn');
+  if (nextBtn) nextBtn.disabled = true;
+
   const prevLevel = state.level;
   state.level++;
   saveLevel(state.level);
   hideOverlays();
   stopMusic();
 
-  // Show interstitial ad before loading next level (Option A: valley + every other peak)
+  // Show interstitial ad before loading next level
   if (shouldShowInterstitial(prevLevel)) {
     await showInterstitialAd();
   }
@@ -2567,6 +2574,8 @@ async function nextLevel() {
     await showRewardReveal(rewarded, rewardsSnapshot);
     startTimer(timerSecondsLeft);
   }
+
+  isTransitioning = false;
 }
 
 function restartGame() {
